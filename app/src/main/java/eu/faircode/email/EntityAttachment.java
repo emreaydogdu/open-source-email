@@ -85,7 +85,7 @@ public class EntityAttachment {
         // Build filename
         File file = EntityAttachment.getFile(context, this.id);
 
-        // Download attachment
+        // download attachment
         InputStream is = null;
         OutputStream os = null;
         try {

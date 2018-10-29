@@ -8,13 +8,13 @@ package eu.faircode.email;
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
-    FairEmail is distributed in the hope that it will be useful,
+    NetGuard is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
 
     You should have received a copy of the GNU General Public License
-    along with FairEmail.  If not, see <http://www.gnu.org/licenses/>.
+    along with NetGuard.  If not, see <http://www.gnu.org/licenses/>.
 
     Copyright 2018 by Marcel Bokhorst (M66B)
 */
@@ -37,6 +37,7 @@ import javax.mail.Address;
 import androidx.annotation.NonNull;
 import androidx.room.Entity;
 import androidx.room.ForeignKey;
+import androidx.room.Ignore;
 import androidx.room.Index;
 import androidx.room.PrimaryKey;
 
@@ -115,6 +116,9 @@ public class EntityMessage implements Serializable {
     public Boolean ui_ignored;
     public String error;
 
+    @Ignore
+    String body = null;
+
     static String generateMessageId() {
         StringBuffer sb = new StringBuffer();
         sb.append('<')
@@ -135,8 +139,9 @@ public class EntityMessage implements Serializable {
         File file = getFile(context, id);
         BufferedWriter out = null;
         try {
+            this.body = (body == null ? "" : body);
             out = new BufferedWriter(new FileWriter(file));
-            out.write(body == null ? "" : body);
+            out.write(this.body);
         } finally {
             if (out != null)
                 try {
@@ -147,8 +152,10 @@ public class EntityMessage implements Serializable {
         }
     }
 
-    String read(Context context) throws IOException {
-        return read(context, this.id);
+    public String read(Context context) throws IOException {
+        if (body == null)
+            body = read(context, this.id);
+        return body;
     }
 
     static String read(Context context, Long id) throws IOException {

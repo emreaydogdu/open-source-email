@@ -1,24 +1,5 @@
 package eu.faircode.email;
 
-/*
-    This file is part of FairEmail.
-
-    FairEmail is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    FairEmail is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with FairEmail.  If not, see <http://www.gnu.org/licenses/>.
-
-    Copyright 2018 by Marcel Bokhorst (M66B)
-*/
-
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
@@ -28,6 +9,7 @@ import android.view.ViewGroup;
 import android.widget.CompoundButton;
 import android.widget.ImageButton;
 import android.widget.ProgressBar;
+import android.widget.Toast;
 import android.widget.ToggleButton;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
@@ -43,7 +25,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 public class FragmentFolders extends FragmentEx {
-    private ImageButton ibHintActions;
+
     private ToggleButton tbShowHidden;
     private RecyclerView rvFolder;
     private ProgressBar pbWait;
@@ -69,24 +51,12 @@ public class FragmentFolders extends FragmentEx {
         View view = inflater.inflate(R.layout.fragment_folders, container, false);
 
         // Get controls
-        ibHintActions = view.findViewById(R.id.ibHintActions);
         tbShowHidden = view.findViewById(R.id.tbShowHidden);
         rvFolder = view.findViewById(R.id.rvFolder);
         pbWait = view.findViewById(R.id.pbWait);
         grpHintActions = view.findViewById(R.id.grpHintActions);
         grpReady = view.findViewById(R.id.grpReady);
         fab = view.findViewById(R.id.fab);
-
-        // Wire controls
-
-        final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getContext());
-        ibHintActions.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                prefs.edit().putBoolean("folder_actions", true).apply();
-                grpHintActions.setVisibility(View.GONE);
-            }
-        });
 
         tbShowHidden.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override

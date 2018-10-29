@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- v21 styles, you can merge these two if your minSdkVersion is >= 21,
+that way you can get rid of the BaseBottomSheetDialog theme and only have the BottomSheetDialogTheme -->
+<resources>
+
+    <style name="BottomSheetDialogTheme" parent="BaseBottomSheetDialog">
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/black</item>
+    </style>
+
+</resources>

@@ -1,23 +1,5 @@
 package eu.faircode.email;
 
-/*
-    This file is part of FairEmail.
-
-    FairEmail is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    FairEmail is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with FairEmail.  If not, see <http://www.gnu.org/licenses/>.
-
-    Copyright 2018 by Marcel Bokhorst (M66B)
-*/
 
 import android.Manifest;
 import android.content.ContentResolver;
@@ -29,8 +11,6 @@ import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Color;
-import android.graphics.Typeface;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
@@ -89,6 +69,7 @@ import javax.mail.internet.InternetAddress;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.widget.PopupMenu;
+import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.constraintlayout.widget.Group;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentManager;
@@ -104,6 +85,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMessage.ViewHolder> {
+
     private Context context;
     private LifecycleOwner owner;
     private FragmentManager fragmentManager;
@@ -123,41 +105,52 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
 
     private static final long CACHE_IMAGE_DURATION = 3 * 24 * 3600 * 1000L;
 
-    public class ViewHolder extends RecyclerView.ViewHolder implements
-            View.OnClickListener, BottomNavigationView.OnNavigationItemSelectedListener {
+
+    AdapterMessage(Context context, LifecycleOwner owner, FragmentManager fragmentManager, ViewType viewType, IProperties properties) {
+        super(DIFF_CALLBACK);
+        this.context = context;
+        this.owner = owner;
+        this.fragmentManager = fragmentManager;
+        this.viewType = viewType;
+        this.properties = properties;
+
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+
+
+        this.contacts = (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED);
+        this.avatars = (prefs.getBoolean("avatars", true) && this.contacts);
+        this.compact = prefs.getBoolean("compact", false);
+        this.debug = prefs.getBoolean("debug", false);
+    }
+
+    public class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener, BottomNavigationView.OnNavigationItemSelectedListener {
+
+        private ConstraintLayout message;
+        private TextView tvSubject,tvFrom,tvBody,tvTime;
+
         private View itemView;
         private View vwColor;
         private ImageView ivExpander;
         private ImageView ivFlagged;
         private ImageView ivAvatar;
-        private TextView tvFrom;
         private ImageView ivAddContact;
-        private TextView tvSize;
-        private TextView tvTime;
-        private TextView tvTimeEx;
+        private TextView  tvSize;
+        private TextView  tvTimeEx;
         private ImageView ivAttachments;
-        private TextView tvSubject;
-        private TextView tvFolder;
-        private TextView tvCount;
+        private TextView  tvFolder;
+        private TextView  tvCount;
         private ImageView ivThread;
-        private TextView tvError;
+        private TextView  tvError;
         private ProgressBar pbLoading;
 
-        private TextView tvFromEx;
-        private TextView tvTo;
-        private TextView tvReplyTo;
-        private TextView tvCc;
-        private TextView tvBcc;
-        private TextView tvSubjectEx;
+        private TextView tvFromEx,tvTo,tvReplyTo,tvCc,tvBcc,tvSubjectEx;
 
         private TextView tvHeaders;
         private ProgressBar pbHeaders;
 
         private BottomNavigationView bnvActions;
 
-        private View vSeparatorBody;
         private Button btnImages;
-        private TextView tvBody;
         private ProgressBar pbBody;
 
         private RecyclerView rvAttachment;
@@ -173,6 +166,7 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
             super(itemView);
 
             this.itemView = itemView.findViewById(R.id.clItem);
+            message = itemView.findViewById(R.id.message);
             vwColor = itemView.findViewById(R.id.vwColor);
             ivExpander = itemView.findViewById(R.id.ivExpander);
             ivFlagged = itemView.findViewById(R.id.ivFlagged);
@@ -202,7 +196,6 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
 
             bnvActions = itemView.findViewById(R.id.bnvActions);
 
-            vSeparatorBody = itemView.findViewById(R.id.vSeparatorBody);
             btnImages = itemView.findViewById(R.id.btnImages);
             tvBody = itemView.findViewById(R.id.tvBody);
             pbBody = itemView.findViewById(R.id.pbBody);
@@ -221,10 +214,12 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
             grpExpanded = itemView.findViewById(R.id.grpExpanded);
 
             tvBody.setMovementMethod(new UrlHandler());
+
         }
 
         private void wire() {
             itemView.setOnClickListener(this);
+            message.setOnClickListener(this);
             ivAddContact.setOnClickListener(this);
             bnvActions.setOnNavigationItemSelectedListener(this);
             btnImages.setOnClickListener(this);
@@ -254,8 +249,6 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
             tvError.setVisibility(View.GONE);
             pbLoading.setVisibility(View.VISIBLE);
             pbHeaders.setVisibility(View.GONE);
-            bnvActions.setVisibility(View.GONE);
-            vSeparatorBody.setVisibility(View.GONE);
             btnImages.setVisibility(View.GONE);
             pbBody.setVisibility(View.GONE);
             grpHeaders.setVisibility(View.GONE);
@@ -279,44 +272,38 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
                     ivAvatar.setImageDrawable(Drawable.createFromStream(is, "avatar"));
                 }
             }
-            ivAvatar.setVisibility(photo ? View.VISIBLE : View.GONE);
+            //ivAvatar.setVisibility(photo ? View.VISIBLE : View.GONE);
 
-            vwColor.setBackgroundColor(message.accountColor == null ? Color.TRANSPARENT : message.accountColor);
-            vwColor.setVisibility(viewType == ViewType.UNIFIED && message.accountColor != null ? View.VISIBLE : View.GONE);
+            //vwColor.setBackgroundColor(message.accountColor == null ? Color.TRANSPARENT : message.accountColor);
+            //vwColor.setVisibility(viewType == ViewType.UNIFIED && message.accountColor != null ? View.VISIBLE : View.GONE);
 
-            ivExpander.setImageResource(show_expanded ? R.drawable.baseline_expand_less_24 : R.drawable.baseline_expand_more_24);
-            ivExpander.setVisibility(viewType == ViewType.THREAD ? View.VISIBLE : View.GONE);
+            //ivExpander.setImageResource(show_expanded ? R.drawable.baseline_expand_less_24 : R.drawable.baseline_expand_more_24);
+            //ivExpander.setVisibility(viewType == ViewType.THREAD ? View.VISIBLE : View.GONE);
 
-            if (viewType == ViewType.THREAD)
-                ivFlagged.setVisibility(message.unflagged == 1 ? View.GONE : View.VISIBLE);
-            else
-                ivFlagged.setVisibility(message.count - message.unflagged > 0 ? View.VISIBLE : View.GONE);
+            //if (viewType == ViewType.THREAD){}
+                //ivFlagged.setVisibility(message.unflagged == 1 ? View.GONE : View.VISIBLE);
+            //else{}
+                //ivFlagged.setVisibility(message.count - message.unflagged > 0 ? View.VISIBLE : View.GONE);
 
-            if (EntityFolder.DRAFTS.equals(message.folderType) ||
-                    EntityFolder.OUTBOX.equals(message.folderType) ||
-                    EntityFolder.SENT.equals(message.folderType)) {
+            if (EntityFolder.DRAFTS.equals(message.folderType) || EntityFolder.OUTBOX.equals(message.folderType) || EntityFolder.SENT.equals(message.folderType)) {
                 tvFrom.setText(MessageHelper.getFormattedAddresses(message.to, !compact));
                 tvTime.setText(DateUtils.getRelativeTimeSpanString(context, message.sent == null ? message.received : message.sent));
             } else {
                 tvFrom.setText(MessageHelper.getFormattedAddresses(message.from, !compact));
                 tvTime.setText(DateUtils.getRelativeTimeSpanString(context, message.received));
             }
-
-            tvSize.setText(message.size == null ? null : Helper.humanReadableByteCount(message.size, true));
-            tvSize.setAlpha(message.content ? 1.0f : 0.5f);
-            tvSize.setVisibility(message.size == null ? View.GONE : View.VISIBLE);
-
-            ivAttachments.setVisibility(message.attachments > 0 ? View.VISIBLE : View.GONE);
             tvSubject.setText(message.subject);
 
-            if (viewType == ViewType.UNIFIED)
-                tvFolder.setText(message.accountName);
-            else
-                tvFolder.setText(message.folderDisplay == null
-                        ? Helper.localizeFolderName(context, message.folderName)
-                        : message.folderDisplay);
-            tvFolder.setVisibility(viewType == ViewType.FOLDER ? View.GONE : View.VISIBLE);
+            //tvSize.setText(message.size == null ? null : Helper.humanReadableByteCount(message.size, true));
+            //tvSize.setTypeface(null, message.content ? Typeface.NORMAL : Typeface.BOLD);
+            //tvSize.setVisibility(message.size == null ? View.GONE : View.VISIBLE);
 
+            //ivAttachments.setVisibility(message.attachments > 0 ? View.VISIBLE : View.GONE);
+
+            //if (viewType == ViewType.UNIFIED) tvFolder.setText(message.accountName);
+            //else tvFolder.setText(message.folderDisplay == null ? Helper.localizeFolderName(context, message.folderName) : message.folderDisplay);
+            //tvFolder.setVisibility(viewType == ViewType.FOLDER ? View.GONE : View.VISIBLE);
+            /*
             if (viewType == ViewType.THREAD) {
                 tvCount.setVisibility(View.GONE);
                 ivThread.setVisibility(View.GONE);
@@ -324,61 +311,42 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
                 tvCount.setText(Integer.toString(message.count));
                 ivThread.setVisibility(View.VISIBLE);
             }
+            */
 
-            if (debug) {
-                db.operation().getOperationsByMessage(message.id).removeObservers(owner);
-                db.operation().getOperationsByMessage(message.id).observe(owner, new Observer<List<EntityOperation>>() {
-                    @Override
-                    public void onChanged(List<EntityOperation> operations) {
-                        String text = message.error +
-                                "\n" + message.id + " " + df.format(new Date(message.received)) +
-                                "\n" + (message.ui_hide ? "HIDDEN " : "") +
-                                "seen=" + message.seen + "/" + message.ui_seen + "/" + message.unseen +
-                                " " + message.uid + "/" + message.id +
-                                "\n" + message.msgid;
-                        if (operations != null)
-                            for (EntityOperation op : operations)
-                                text += "\n" + op.id + ":" + op.name + " " + df.format(new Date(op.created));
+            //int typeface = (message.unseen > 0 ? Typeface.BOLD : Typeface.NORMAL);
+            //tvFrom.setTypeface(null, typeface);
+            //tvTime.setTypeface(null, typeface);
+            //tvSubject.setTypeface(null, typeface);
+            //tvCount.setTypeface(null, typeface);
 
-                        tvError.setText(text);
-                        tvError.setVisibility(View.VISIBLE);
-                    }
-                });
-            } else {
-                tvError.setText(message.error);
-                tvError.setVisibility(message.error == null ? View.GONE : View.VISIBLE);
+            //int colorUnseen = Helper.resolveColor(context, message.unseen > 0 ? R.attr.colorUnread : android.R.attr.textColorSecondary);
+            //tvFrom.setTextColor(colorUnseen);
+            //tvTime.setTextColor(colorUnseen);
+
+            //grpExpanded.setVisibility(viewType == ViewType.THREAD && show_expanded ? View.VISIBLE : View.GONE);
+            //ivAddContact.setVisibility(viewType == ViewType.THREAD && show_expanded && contacts && message.from != null ? View.VISIBLE : View.GONE);
+            //pbHeaders.setVisibility(View.GONE);
+            //grpHeaders.setVisibility(show_headers && show_expanded ? View.VISIBLE : View.GONE);
+            //bnvActions.setVisibility(View.GONE);
+            //btnImages.setVisibility(View.GONE);
+            //pbBody.setVisibility(View.GONE);
+            //grpAttachments.setVisibility(message.attachments > 0 && show_expanded ? View.VISIBLE : View.GONE);
+
+            //db.folder().liveSystemFolders(message.account).removeObservers(owner);
+            //db.attachment().liveAttachments(message.id).removeObservers(owner);
+
+            //bnvActions.setTag(null);
+            tvBody.setText(null);
+            tvBody.setMaxLines(4);
+
+            if (message.content) {
+                Bundle args = new Bundle();
+                args.putSerializable("message", message);
+                bodyTask.load(context, owner, args);
             }
 
-            int typeface = (message.unseen > 0 ? Typeface.BOLD : Typeface.NORMAL);
-            tvFrom.setTypeface(null, typeface);
-            tvTime.setTypeface(null, typeface);
-            tvSubject.setTypeface(null, typeface);
-            tvCount.setTypeface(null, typeface);
-
-            int colorUnseen = Helper.resolveColor(context, message.unseen > 0
-                    ? R.attr.colorUnread : android.R.attr.textColorSecondary);
-            tvFrom.setTextColor(colorUnseen);
-            tvTime.setTextColor(colorUnseen);
-
-            grpExpanded.setVisibility(viewType == ViewType.THREAD && show_expanded ? View.VISIBLE : View.GONE);
-            ivAddContact.setVisibility(viewType == ViewType.THREAD && show_expanded && contacts && message.from != null ? View.VISIBLE : View.GONE);
-            pbHeaders.setVisibility(View.GONE);
-            grpHeaders.setVisibility(show_headers && show_expanded ? View.VISIBLE : View.GONE);
-            bnvActions.setVisibility(View.GONE);
-            vSeparatorBody.setVisibility(View.GONE);
-            btnImages.setVisibility(View.GONE);
-            pbBody.setVisibility(View.GONE);
-            grpAttachments.setVisibility(message.attachments > 0 && show_expanded ? View.VISIBLE : View.GONE);
-
-            db.folder().liveSystemFolders(message.account).removeObservers(owner);
-            db.attachment().liveAttachments(message.id).removeObservers(owner);
-
-            bnvActions.setTag(null);
-
             if (show_expanded) {
-                if (EntityFolder.DRAFTS.equals(message.folderType) ||
-                        EntityFolder.OUTBOX.equals(message.folderType) ||
-                        EntityFolder.SENT.equals(message.folderType))
+                if (EntityFolder.DRAFTS.equals(message.folderType) || EntityFolder.OUTBOX.equals(message.folderType) || EntityFolder.SENT.equals(message.folderType))
                     tvTimeEx.setText(df.format(new Date(message.sent == null ? message.received : message.sent)));
                 else
                     tvTimeEx.setText(df.format(new Date(message.received)));
@@ -392,8 +360,6 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
 
                 tvHeaders.setText(show_headers ? message.headers : null);
 
-                vSeparatorBody.setVisibility(View.VISIBLE);
-                tvBody.setText(null);
                 pbBody.setVisibility(View.VISIBLE);
 
                 if (message.content) {
@@ -411,6 +377,7 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
                                 boolean hasJunk = false;
                                 boolean hasTrash = false;
                                 boolean hasArchive = false;
+                                boolean hasUser = false;
 
                                 if (folders != null)
                                     for (EntityFolder folder : folders) {
@@ -420,6 +387,8 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
                                             hasTrash = true;
                                         else if (EntityFolder.ARCHIVE.equals(folder.type))
                                             hasArchive = true;
+                                        else if (EntityFolder.USER.equals(folder.type))
+                                            hasUser = true;
                                     }
 
                                 boolean inInbox = EntityFolder.INBOX.equals(message.folderType);
@@ -434,14 +403,14 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
                                 bnvActions.setTag(data);
 
                                 bnvActions.getMenu().findItem(R.id.action_delete).setVisible((message.uid != null && hasTrash) || (inOutbox && !TextUtils.isEmpty(message.error)));
-                                bnvActions.getMenu().findItem(R.id.action_move).setVisible(message.uid != null);
+                                bnvActions.getMenu().findItem(R.id.action_move).setVisible(message.uid != null && (!inInbox || hasUser));
                                 bnvActions.getMenu().findItem(R.id.action_archive).setVisible(message.uid != null && !inArchive && hasArchive);
 
                                 bnvActions.getMenu().findItem(R.id.action_reply).setEnabled(message.content);
                                 bnvActions.getMenu().findItem(R.id.action_reply).setVisible(!inOutbox);
 
-                                bnvActions.setVisibility(View.VISIBLE);
-                                vSeparatorBody.setVisibility(View.GONE);
+                                //bnvActions.setVisibility(View.VISIBLE);
+                                //vSeparatorBody.setVisibility(View.GONE);
 
                                 bnvActions.setHasTransientState(false);
                             }
@@ -475,32 +444,41 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
         @Override
         public void onClick(View view) {
             int pos = getAdapterPosition();
-            if (pos == RecyclerView.NO_POSITION)
-                return;
+            if (pos == RecyclerView.NO_POSITION) return;
 
             TupleMessageEx message = getItem(pos);
 
-            if (view.getId() == R.id.ivAddContact)
-                onAddContact(message);
-            else if (viewType == ViewType.THREAD) {
-                if (view.getId() == R.id.btnImages)
-                    onShowImages(message);
-                else
-                    onExpandMessage(pos, message);
-            } else {
-                if (EntityFolder.DRAFTS.equals(message.folderType))
-                    context.startActivity(
-                            new Intent(context, ActivityCompose.class)
-                                    .putExtra("action", "edit")
-                                    .putExtra("id", message.id));
-                else {
-                    LocalBroadcastManager lbm = LocalBroadcastManager.getInstance(context);
-                    lbm.sendBroadcast(
-                            new Intent(ActivityView.ACTION_VIEW_THREAD)
-                                    .putExtra("account", message.account)
-                                    .putExtra("thread", message.thread));
+            if (view.getId() == R.id.ivAddContact) onAddContact(message);
+            else
+                if (viewType == ViewType.THREAD) {
+                    if (view.getId() == R.id.btnImages) onShowImages(message);
+                    else onExpandMessage(pos, message);
+                } else {
+                    if (EntityFolder.DRAFTS.equals(message.folderType))
+                        context.startActivity(
+                                new Intent(context, ActivityCompose.class)
+                                        .putExtra("action", "edit")
+                                        .putExtra("id", message.id));
+                    else {
+                        Toast.makeText(context, "Test", Toast.LENGTH_SHORT).show();
+
+                        Intent intent = new Intent(context, ActivityMessage.class);
+                        Bundle b = new Bundle();
+                        b.putLong("account", message.account);
+                        b.putString("thread", message.thread);
+                        b.putSerializable("message", message);
+                        intent.putExtras(b); //Put your id to your next Intent
+                        context.startActivity(intent);
+
+                        //LocalBroadcastManager lbm = LocalBroadcastManager.getInstance(context);
+                        //lbm.sendBroadcast(
+                        //        new Intent(ActivityView.ACTION_VIEW_THREAD)
+                        //                .putExtra("account", message.account)
+                        //                .putExtra("thread", message.thread));
+                        //
+                        //onShowImages(message);
+                    }
                 }
-            }
         }
 
         private void onAddContact(EntityMessage message) {
@@ -624,11 +602,7 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
                         } else {
                             File file = EntityAttachment.getFile(context, attachment.id);
                             Drawable d = Drawable.createFromPath(file.getAbsolutePath());
-                            if (d == null) {
-                                d = context.getResources().getDrawable(R.drawable.baseline_warning_24, context.getTheme());
-                                d.setBounds(0, 0, px, px);
-                            } else
-                                d.setBounds(0, 0, d.getIntrinsicWidth(), d.getIntrinsicHeight());
+                            d.setBounds(0, 0, d.getIntrinsicWidth(), d.getIntrinsicHeight());
                             return d;
                         }
                     }
@@ -791,8 +765,7 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
         @Override
         public boolean onNavigationItemSelected(@NonNull MenuItem item) {
             ActionData data = (ActionData) bnvActions.getTag();
-            if (data == null)
-                return false;
+            if (data == null) return false;
 
             switch (item.getItemId()) {
                 case R.id.action_more:
@@ -859,7 +832,6 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
                     .setNegativeButton(android.R.string.cancel, null)
                     .show();
         }
-
         private void onForward(final ActionData data) {
             Bundle args = new Bundle();
             args.putLong("id", data.message.id);
@@ -901,13 +873,11 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
                 }
             }.load(context, owner, args);
         }
-
         private void onReplyAll(ActionData data) {
             context.startActivity(new Intent(context, ActivityCompose.class)
                     .putExtra("action", "reply_all")
                     .putExtra("reference", data.message.id));
         }
-
         private void onAnswer(final ActionData data) {
             final DB db = DB.getInstance(context);
             db.answer().liveAnswers().observe(owner, new Observer<List<EntityAnswer>>() {
@@ -968,7 +938,6 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
                 }
             });
         }
-
         private void onUnseen(final ActionData data) {
             Bundle args = new Bundle();
             args.putLong("id", data.message.id);
@@ -1003,7 +972,6 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
                 }
             }.load(context, owner, args);
         }
-
         private void onFlag(ActionData data) {
             Bundle args = new Bundle();
             args.putLong("id", data.message.id);
@@ -1029,13 +997,12 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
                 }
             }.load(context, owner, args);
         }
-
         private void onShowHeaders(ActionData data) {
             boolean show_headers = !properties.showHeaders(data.message.id);
             properties.setHeaders(data.message.id, show_headers);
             if (show_headers) {
-                grpHeaders.setVisibility(View.VISIBLE);
-                pbHeaders.setVisibility(View.VISIBLE);
+                //grpHeaders.setVisibility(View.VISIBLE);
+                //pbHeaders.setVisibility(View.VISIBLE);
 
                 Bundle args = new Bundle();
                 args.putLong("id", data.message.id);
@@ -1059,7 +1026,6 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
             } else
                 notifyDataSetChanged();
         }
-
         private void onShowHtml(ActionData data) {
             LocalBroadcastManager lbm = LocalBroadcastManager.getInstance(context);
             lbm.sendBroadcast(
@@ -1067,15 +1033,6 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
                             .putExtra("id", data.message.id)
                             .putExtra("from", MessageHelper.getFormattedAddresses(data.message.from, true)));
         }
-
-        private void onDecrypt(ActionData data) {
-            LocalBroadcastManager lbm = LocalBroadcastManager.getInstance(context);
-            lbm.sendBroadcast(
-                    new Intent(ActivityView.ACTION_DECRYPT)
-                            .putExtra("id", data.message.id)
-                            .putExtra("to", ((InternetAddress) data.message.to[0]).getAddress()));
-        }
-
         private void onMore(final ActionData data) {
             boolean inOutbox = EntityFolder.OUTBOX.equals(data.message.folderType);
             boolean show_headers = properties.showHeaders(data.message.id);
@@ -1091,20 +1048,18 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
             popupMenu.getMenu().findItem(R.id.menu_reply_all).setEnabled(data.message.content);
             popupMenu.getMenu().findItem(R.id.menu_reply_all).setVisible(!inOutbox);
 
-            popupMenu.getMenu().findItem(R.id.menu_answer).setEnabled(data.message.content);
-            popupMenu.getMenu().findItem(R.id.menu_answer).setVisible(!inOutbox);
-
-            popupMenu.getMenu().findItem(R.id.menu_unseen).setVisible(data.message.uid != null && !inOutbox);
-
-            popupMenu.getMenu().findItem(R.id.menu_flag).setChecked(data.message.unflagged != 1);
-            popupMenu.getMenu().findItem(R.id.menu_flag).setVisible(data.message.uid != null && !inOutbox);
-
             popupMenu.getMenu().findItem(R.id.menu_show_headers).setChecked(show_headers);
             popupMenu.getMenu().findItem(R.id.menu_show_headers).setVisible(data.message.uid != null);
 
             popupMenu.getMenu().findItem(R.id.menu_show_html).setEnabled(data.message.content && Helper.classExists("android.webkit.WebView"));
 
-            popupMenu.getMenu().findItem(R.id.menu_decrypt).setEnabled(data.message.to != null && data.message.to.length > 0);
+            popupMenu.getMenu().findItem(R.id.menu_flag).setChecked(data.message.unflagged != 1);
+            popupMenu.getMenu().findItem(R.id.menu_flag).setVisible(data.message.uid != null && !inOutbox);
+
+            popupMenu.getMenu().findItem(R.id.menu_unseen).setVisible(data.message.uid != null && !inOutbox);
+
+            popupMenu.getMenu().findItem(R.id.menu_answer).setEnabled(data.message.content);
+            popupMenu.getMenu().findItem(R.id.menu_answer).setVisible(!inOutbox);
 
             popupMenu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
                 @Override
@@ -1119,23 +1074,20 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
                         case R.id.menu_reply_all:
                             onReplyAll(data);
                             return true;
-                        case R.id.menu_answer:
-                            onAnswer(data);
-                            return true;
-                        case R.id.menu_unseen:
-                            onUnseen(data);
-                            return true;
-                        case R.id.menu_flag:
-                            onFlag(data);
-                            return true;
                         case R.id.menu_show_headers:
                             onShowHeaders(data);
                             return true;
                         case R.id.menu_show_html:
                             onShowHtml(data);
                             return true;
-                        case R.id.menu_decrypt:
-                            onDecrypt(data);
+                        case R.id.menu_flag:
+                            onFlag(data);
+                            return true;
+                        case R.id.menu_unseen:
+                            onUnseen(data);
+                            return true;
+                        case R.id.menu_answer:
+                            onAnswer(data);
                             return true;
                         default:
                             return false;
@@ -1144,7 +1096,6 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
             });
             popupMenu.show();
         }
-
         private void onDelete(final ActionData data) {
             if (data.delete) {
                 // No trash or is trash
@@ -1227,7 +1178,6 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
                 }.load(context, owner, args);
             }
         }
-
         private void onMove(ActionData data) {
             Bundle args = new Bundle();
             args.putLong("id", data.message.id);
@@ -1235,32 +1185,46 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
             new SimpleTask<List<EntityFolder>>() {
                 @Override
                 protected List<EntityFolder> onLoad(Context context, Bundle args) {
+                    EntityMessage message;
+                    List<EntityFolder> folders;
+
                     DB db = DB.getInstance(context);
-                    EntityMessage message = db.message().getMessage(args.getLong("id"));
-                    List<EntityFolder> folders = db.folder().getFolders(message.account);
-                    List<EntityFolder> targets = new ArrayList<>();
-                    for (EntityFolder f : folders)
-                        if (!f.id.equals(message.folder) && !EntityFolder.DRAFTS.equals(f.type))
-                            targets.add(f);
+                    try {
+                        db.beginTransaction();
+
+                        message = db.message().getMessage(args.getLong("id"));
+                        folders = db.folder().getUserFolders(message.account);
+
+                        for (int i = 0; i < folders.size(); i++)
+                            if (folders.get(i).id.equals(message.folder)) {
+                                folders.remove(i);
+                                break;
+                            }
+
+                        db.setTransactionSuccessful();
+                    } finally {
+                        db.endTransaction();
+                    }
 
                     final Collator collator = Collator.getInstance(Locale.getDefault());
                     collator.setStrength(Collator.SECONDARY); // Case insensitive, process accents etc
 
-                    Collections.sort(targets, new Comparator<EntityFolder>() {
+                    Collections.sort(folders, new Comparator<EntityFolder>() {
                         @Override
                         public int compare(EntityFolder f1, EntityFolder f2) {
-                            int s = Integer.compare(
-                                    EntityFolder.FOLDER_SORT_ORDER.indexOf(f1.type),
-                                    EntityFolder.FOLDER_SORT_ORDER.indexOf(f2.type));
-                            if (s != 0)
-                                return s;
-                            return collator.compare(
-                                    f1.name == null ? "" : f1.name,
-                                    f2.name == null ? "" : f2.name);
+                            return collator.compare(f1.name, f2.name);
                         }
                     });
 
-                    return targets;
+                    EntityFolder sent = db.folder().getFolderByType(message.account, EntityFolder.SENT);
+                    if (sent != null && !message.folder.equals(sent.id))
+                        folders.add(0, sent);
+
+                    EntityFolder inbox = db.folder().getFolderByType(message.account, EntityFolder.INBOX);
+                    if (inbox != null && !message.folder.equals(inbox.id))
+                        folders.add(0, inbox);
+
+                    return folders;
                 }
 
                 @Override
@@ -1320,7 +1284,6 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
                 }
             }.load(context, owner, args);
         }
-
         private void onArchive(ActionData data) {
             Bundle args = new Bundle();
             args.putLong("id", data.message.id);
@@ -1356,7 +1319,6 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
                 }
             }.load(context, owner, args);
         }
-
         private void onReply(ActionData data) {
             context.startActivity(new Intent(context, ActivityCompose.class)
                     .putExtra("action", "reply")
@@ -1368,25 +1330,7 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
         }
     }
 
-    AdapterMessage(Context context, LifecycleOwner owner, FragmentManager fragmentManager, ViewType viewType, IProperties properties) {
-        super(DIFF_CALLBACK);
-        this.context = context;
-        this.owner = owner;
-        this.fragmentManager = fragmentManager;
-        this.viewType = viewType;
-        this.properties = properties;
-
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
-
-        this.contacts = (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS)
-                == PackageManager.PERMISSION_GRANTED);
-        this.avatars = (prefs.getBoolean("avatars", true) && this.contacts);
-        this.compact = prefs.getBoolean("compact", false);
-        this.debug = prefs.getBoolean("debug", false);
-    }
-
-    private static final DiffUtil.ItemCallback<TupleMessageEx> DIFF_CALLBACK =
-            new DiffUtil.ItemCallback<TupleMessageEx>() {
+    private static final DiffUtil.ItemCallback<TupleMessageEx> DIFF_CALLBACK = new DiffUtil.ItemCallback<TupleMessageEx>() {
                 @Override
                 public boolean areItemsTheSame(
                         @NonNull TupleMessageEx prev, @NonNull TupleMessageEx next) {
@@ -1400,13 +1344,9 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
                 }
             };
 
-    @Override
-    @NonNull
+    @Override @NonNull
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        return new ViewHolder(LayoutInflater.from(context).inflate(
-                compact ? R.layout.item_message_compact : R.layout.item_message_normal,
-                parent,
-                false));
+        return new ViewHolder(LayoutInflater.from(context).inflate(compact ? R.layout.item_message_compact : R.layout.item_message_normal, parent, false));
     }
 
     @Override
@@ -1414,8 +1354,8 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
         holder.unwire();
 
         TupleMessageEx message = getItem(position);
-        if (message == null)
-            holder.clear();
+        if (message == null){}
+            //holder.clear();
         else {
             holder.bindTo(position, message);
             holder.wire();
@@ -1439,4 +1379,5 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
 
         boolean showImages(long id);
     }
+
 }

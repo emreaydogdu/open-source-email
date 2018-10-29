@@ -1,32 +1,11 @@
 package eu.faircode.email;
 
-/*
-    This file is part of FairEmail.
-
-    FairEmail is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    FairEmail is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with FairEmail.  If not, see <http://www.gnu.org/licenses/>.
-
-    Copyright 2018 by Marcel Bokhorst (M66B)
-*/
-
 import android.app.Activity;
-import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.IntentSender;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.net.Uri;
@@ -34,7 +13,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.ParcelFileDescriptor;
 import android.preference.PreferenceManager;
-import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
@@ -42,28 +20,15 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.android.material.snackbar.Snackbar;
-
-import org.json.JSONArray;
-import org.json.JSONObject;
-import org.openintents.openpgp.OpenPgpError;
-import org.openintents.openpgp.util.OpenPgpApi;
-import org.openintents.openpgp.util.OpenPgpServiceConnection;
-
 import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileReader;
-import java.io.InputStreamReader;
-import java.net.URL;
 import java.text.Collator;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -71,16 +36,11 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
-import java.util.Properties;
 
 import javax.mail.Address;
-import javax.mail.Session;
-import javax.mail.internet.MimeMessage;
-import javax.net.ssl.HttpsURLConnection;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
@@ -88,17 +48,18 @@ import androidx.lifecycle.Lifecycle;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProviders;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
+import androidx.paging.PagedList;
+import eu.faircode.email.fragments.MenuFragment;
+import eu.faircode.email.views.CircularImageView;
 
-public class ActivityView extends ActivityBilling implements FragmentManager.OnBackStackChangedListener {
-    private View view;
+public class ActivityView extends ActivityBilling implements FragmentManager.OnBackStackChangedListener, View.OnClickListener {
+
+    private MenuFragment menuFragment;
     private DrawerLayout drawerLayout;
     private ListView drawerList;
-    private ActionBarDrawerToggle drawerToggle;
 
-    private long message = -1;
     private long attachment = -1;
-
-    private OpenPgpServiceConnection pgpService;
+    private PagedList<TupleMessageEx> messages = null;
 
     private static final int ATTACHMENT_BUFFER_SIZE = 8192; // bytes
 
@@ -107,8 +68,6 @@ public class ActivityView extends ActivityBilling implements FragmentManager.OnB
     static final int REQUEST_ERROR = 3;
 
     static final int REQUEST_ATTACHMENT = 1;
-    static final int REQUEST_INVITE = 2;
-    static final int REQUEST_DECRYPT = 3;
 
     static final String ACTION_VIEW_MESSAGES = BuildConfig.APPLICATION_ID + ".VIEW_MESSAGES";
     static final String ACTION_VIEW_THREAD = BuildConfig.APPLICATION_ID + ".VIEW_THREAD";
@@ -116,38 +75,17 @@ public class ActivityView extends ActivityBilling implements FragmentManager.OnB
     static final String ACTION_EDIT_FOLDER = BuildConfig.APPLICATION_ID + ".EDIT_FOLDER";
     static final String ACTION_EDIT_ANSWER = BuildConfig.APPLICATION_ID + ".EDIT_ANSWER";
     static final String ACTION_STORE_ATTACHMENT = BuildConfig.APPLICATION_ID + ".STORE_ATTACHMENT";
-    static final String ACTION_DECRYPT = BuildConfig.APPLICATION_ID + ".DECRYPT";
     static final String ACTION_SHOW_PRO = BuildConfig.APPLICATION_ID + ".SHOW_PRO";
-
-    static final String UPDATE_LATEST_API = "https://api.github.com/repos/M66B/open-source-email/releases/latest";
-    static final long UPDATE_INTERVAL = 12 * 3600 * 1000L; // milliseconds
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setContentView(LayoutInflater.from(this).inflate(R.layout.activity_view, null));
+        getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
 
-        view = LayoutInflater.from(this).inflate(R.layout.activity_view, null);
-        setContentView(view);
-
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        getSupportActionBar().setHomeButtonEnabled(true);
+        findViewById(R.id.menu).setOnClickListener(this);
 
         drawerLayout = findViewById(R.id.drawer_layout);
-        drawerLayout.setScrimColor(Helper.resolveColor(this, R.attr.colorDrawerScrim));
-
-        drawerToggle = new ActionBarDrawerToggle(this, drawerLayout, R.string.app_name, R.string.app_name) {
-            public void onDrawerClosed(View view) {
-                super.onDrawerClosed(view);
-                getSupportActionBar().setTitle(getString(R.string.app_name));
-            }
-
-            public void onDrawerOpened(View drawerView) {
-                super.onDrawerOpened(drawerView);
-                getSupportActionBar().setTitle(getString(R.string.app_name));
-            }
-        };
-        drawerLayout.addDrawerListener(drawerToggle);
-
         drawerList = findViewById(R.id.drawer_list);
         drawerList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
@@ -156,9 +94,6 @@ public class ActivityView extends ActivityBilling implements FragmentManager.OnB
                 switch (item.getId()) {
                     case -1:
                         onMenuFolders((long) item.getData());
-                        break;
-                    case R.string.menu_setup:
-                        onMenuSetup();
                         break;
                     case R.string.menu_answers:
                         onMenuAnswers();
@@ -181,15 +116,6 @@ public class ActivityView extends ActivityBilling implements FragmentManager.OnB
                     case R.string.menu_about:
                         onMenuAbout();
                         break;
-                    case R.string.menu_rate:
-                        onMenuRate();
-                        break;
-                    case R.string.menu_invite:
-                        onMenuInvite();
-                        break;
-                    case R.string.menu_other:
-                        onMenuOtherApps();
-                        break;
                 }
 
                 drawerLayout.closeDrawer(drawerList);
@@ -201,8 +127,7 @@ public class ActivityView extends ActivityBilling implements FragmentManager.OnB
         DB.getInstance(this).account().liveAccounts(true).observe(this, new Observer<List<EntityAccount>>() {
             @Override
             public void onChanged(@Nullable List<EntityAccount> accounts) {
-                if (accounts == null)
-                    accounts = new ArrayList<>();
+                if (accounts == null) accounts = new ArrayList<>();
 
                 ArrayAdapterDrawer drawerArray = new ArrayAdapterDrawer(ActivityView.this);
 
@@ -219,12 +144,7 @@ public class ActivityView extends ActivityBilling implements FragmentManager.OnB
                 for (EntityAccount account : accounts)
                     drawerArray.add(new DrawerItem(R.layout.item_drawer, -1, R.drawable.baseline_folder_24, account.name, account.id));
 
-                drawerArray.add(new DrawerItem(R.layout.item_drawer_separator));
-
-                drawerArray.add(new DrawerItem(ActivityView.this, R.layout.item_drawer, R.drawable.baseline_settings_applications_24, R.string.menu_setup));
                 drawerArray.add(new DrawerItem(ActivityView.this, R.layout.item_drawer, R.drawable.baseline_reply_24, R.string.menu_answers));
-
-                drawerArray.add(new DrawerItem(R.layout.item_drawer_separator));
 
                 if (PreferenceManager.getDefaultSharedPreferences(ActivityView.this).getBoolean("debug", false))
                     drawerArray.add(new DrawerItem(ActivityView.this, R.layout.item_drawer, R.drawable.baseline_list_24, R.string.menu_operations));
@@ -243,17 +163,6 @@ public class ActivityView extends ActivityBilling implements FragmentManager.OnB
 
                 drawerArray.add(new DrawerItem(ActivityView.this, R.layout.item_drawer, R.drawable.baseline_info_24, R.string.menu_about));
 
-                drawerArray.add(new DrawerItem(R.layout.item_drawer_separator));
-
-                if (getIntentInvite().resolveActivity(getPackageManager()) != null)
-                    drawerArray.add(new DrawerItem(ActivityView.this, R.layout.item_drawer, R.drawable.baseline_people_24, R.string.menu_invite));
-
-                if (getIntentRate().resolveActivity(getPackageManager()) != null)
-                    drawerArray.add(new DrawerItem(ActivityView.this, R.layout.item_drawer, R.drawable.baseline_star_24, R.string.menu_rate));
-
-                if (getIntentOtherApps().resolveActivity(getPackageManager()) != null)
-                    drawerArray.add(new DrawerItem(ActivityView.this, R.layout.item_drawer, R.drawable.baseline_get_app_24, R.string.menu_other));
-
                 drawerList.setAdapter(drawerArray);
             }
         });
@@ -270,28 +179,8 @@ public class ActivityView extends ActivityBilling implements FragmentManager.OnB
             fragmentTransaction.commit();
         }
 
-        if (savedInstanceState != null)
-            drawerToggle.setDrawerIndicatorEnabled(savedInstanceState.getBoolean("toggle"));
-
         checkFirst();
         checkCrash();
-        if (!Helper.isPlayStoreInstall(this))
-            checkUpdate();
-
-        pgpService = new OpenPgpServiceConnection(this, "org.sufficientlysecure.keychain");
-        pgpService.bindToService();
-    }
-
-    @Override
-    protected void onSaveInstanceState(Bundle outState) {
-        super.onSaveInstanceState(outState);
-        outState.putBoolean("toggle", drawerToggle.isDrawerIndicatorEnabled());
-    }
-
-    @Override
-    protected void onPostCreate(Bundle savedInstanceState) {
-        super.onPostCreate(savedInstanceState);
-        drawerToggle.syncState();
     }
 
     @Override
@@ -312,12 +201,8 @@ public class ActivityView extends ActivityBilling implements FragmentManager.OnB
         iff.addAction(ACTION_EDIT_FOLDER);
         iff.addAction(ACTION_EDIT_ANSWER);
         iff.addAction(ACTION_STORE_ATTACHMENT);
-        iff.addAction(ACTION_DECRYPT);
         iff.addAction(ACTION_SHOW_PRO);
         lbm.registerReceiver(receiver, iff);
-
-        if (!pgpService.isBound())
-            pgpService.bindToService();
 
         Intent intent = getIntent();
         String action = intent.getAction();
@@ -389,28 +274,20 @@ public class ActivityView extends ActivityBilling implements FragmentManager.OnB
         super.onPause();
         LocalBroadcastManager lbm = LocalBroadcastManager.getInstance(this);
         lbm.unregisterReceiver(receiver);
-    }
-
-    @Override
-    protected void onDestroy() {
-        if (pgpService != null)
-            pgpService.unbindFromService();
-
-        super.onDestroy();
+        if(menuFragment != null){ if(menuFragment.isVisible()) menuFragment.dismiss();}
     }
 
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
-        drawerToggle.onConfigurationChanged(newConfig);
     }
 
     @Override
     public void onBackPressed() {
         if (drawerLayout.isDrawerOpen(drawerList))
             drawerLayout.closeDrawer(drawerList);
-        else
-            super.onBackPressed();
+        else if(menuFragment != null) if(menuFragment.isVisible()) menuFragment.dismiss();
+        else super.onBackPressed();
     }
 
     @Override
@@ -421,14 +298,13 @@ public class ActivityView extends ActivityBilling implements FragmentManager.OnB
         else {
             if (drawerLayout.isDrawerOpen(drawerList))
                 drawerLayout.closeDrawer(drawerList);
-            drawerToggle.setDrawerIndicatorEnabled(count == 1);
+            //drawerToggle.setDrawerIndicatorEnabled(count == 1);
         }
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        if (drawerToggle.onOptionsItemSelected(item))
-            return true;
+        //if (drawerToggle.onOptionsItemSelected(item)) return true;
 
         switch (item.getItemId()) {
             case android.R.id.home:
@@ -454,7 +330,6 @@ public class ActivityView extends ActivityBilling implements FragmentManager.OnB
                     .show();
         }
     }
-
     private void checkCrash() {
         new SimpleTask<Long>() {
             @Override
@@ -464,7 +339,7 @@ public class ActivityView extends ActivityBilling implements FragmentManager.OnB
                     // Get version info
                     StringBuilder sb = new StringBuilder();
 
-                    sb.append(context.getString(R.string.title_crash_info_remark)).append("\n\n\n\n");
+                    sb.append(context.getString(R.string.title_crash_info_remark) + "\n\n\n\n");
 
                     sb.append(String.format("%s: %s %s/%s\r\n",
                             context.getString(R.string.app_name),
@@ -554,121 +429,19 @@ public class ActivityView extends ActivityBilling implements FragmentManager.OnB
         }.load(this, new Bundle());
     }
 
-    private class UpdateInfo {
-        String tag_name; // version
-        String html_url;
-    }
-
-    private void checkUpdate() {
-        final long now = new Date().getTime();
-        final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-        if (prefs.getLong("last_update_check", 0) + UPDATE_INTERVAL > now)
-            return;
-
-        new SimpleTask<UpdateInfo>() {
-            @Override
-            protected UpdateInfo onLoad(Context context, Bundle args) throws Throwable {
-                StringBuilder json = new StringBuilder();
-                HttpsURLConnection urlConnection = null;
-                try {
-                    URL latest = new URL(UPDATE_LATEST_API);
-                    urlConnection = (HttpsURLConnection) latest.openConnection();
-                    BufferedReader br = new BufferedReader(new InputStreamReader(urlConnection.getInputStream()));
-
-                    String line;
-                    while ((line = br.readLine()) != null)
-                        json.append(line);
-
-                    JSONObject jroot = new JSONObject(json.toString());
-                    if (jroot.has("tag_name") &&
-                            jroot.has("html_url") &&
-                            jroot.has("assets")) {
-                        prefs.edit().putLong("last_update_check", now).apply();
-
-                        UpdateInfo info = new UpdateInfo();
-                        info.tag_name = jroot.getString("tag_name");
-                        info.html_url = jroot.getString("html_url");
-                        if (TextUtils.isEmpty(info.html_url))
-                            return null;
-
-                        JSONArray jassets = jroot.getJSONArray("assets");
-                        for (int i = 0; i < jassets.length(); i++) {
-                            JSONObject jasset = jassets.getJSONObject(i);
-                            if (jasset.has("name")) {
-                                String name = jasset.getString("name");
-                                if (name != null && name.endsWith(".apk")) {
-                                    if (TextUtils.isEmpty(info.tag_name))
-                                        info.tag_name = name;
-
-                                    Log.i(Helper.TAG, "Latest version=" + info.tag_name);
-                                    if (BuildConfig.VERSION_NAME.equals(info.tag_name))
-                                        break;
-                                    else
-                                        return info;
-                                }
-                            }
-                        }
-                    }
-                } finally {
-                    if (urlConnection != null)
-                        urlConnection.disconnect();
-                }
-
-                return null;
-            }
-
-            @Override
-            protected void onLoaded(Bundle args, UpdateInfo info) {
-                if (info == null)
-                    return;
-
-                final Intent update = new Intent(Intent.ACTION_VIEW, Uri.parse(info.html_url));
-                if (update.resolveActivity(getPackageManager()) != null)
-                    new DialogBuilderLifecycle(ActivityView.this, ActivityView.this)
-                            .setMessage(getString(R.string.title_updated, info.tag_name))
-                            .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
-                                @Override
-                                public void onClick(DialogInterface dialog, int which) {
-                                    Helper.view(ActivityView.this, update);
-                                }
-                            })
-                            .show();
-            }
-
-            @Override
-            protected void onException(Bundle args, Throwable ex) {
-                if (BuildConfig.DEBUG)
-                    Helper.unexpectedError(ActivityView.this, ex);
-            }
-        }.load(this, new Bundle());
+    @Override
+    public void onClick(View view) {
+        switch (view.getId()){
+            case R.id.menu:
+                menuFragment = new MenuFragment();
+                menuFragment.show(getSupportFragmentManager(), menuFragment.getTag());
+                break;
+        }
     }
 
     private Intent getIntentFAQ() {
         Intent intent = new Intent(Intent.ACTION_VIEW);
         intent.setData(Uri.parse("https://github.com/M66B/open-source-email/blob/master/FAQ.md"));
-        return intent;
-    }
-
-    private Intent getIntentRate() {
-        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=" + BuildConfig.APPLICATION_ID));
-        if (intent.resolveActivity(getPackageManager()) == null)
-            intent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=" + BuildConfig.APPLICATION_ID));
-        return intent;
-    }
-
-    private Intent getIntentInvite() {
-        Intent intent = new Intent("com.google.android.gms.appinvite.ACTION_APP_INVITE");
-        intent.setPackage("com.google.android.gms");
-        intent.putExtra("com.google.android.gms.appinvite.TITLE", getString(R.string.menu_invite));
-        intent.putExtra("com.google.android.gms.appinvite.MESSAGE", getString(R.string.title_try));
-        intent.putExtra("com.google.android.gms.appinvite.BUTTON_TEXT", getString(R.string.title_try));
-        // com.google.android.gms.appinvite.DEEP_LINK_URL
-        return intent;
-    }
-
-    private Intent getIntentOtherApps() {
-        Intent intent = new Intent(Intent.ACTION_VIEW);
-        intent.setData(Uri.parse("https://play.google.com/store/apps/dev?id=8420080860664580239"));
         return intent;
     }
 
@@ -685,78 +458,36 @@ public class ActivityView extends ActivityBilling implements FragmentManager.OnB
         fragmentTransaction.replace(R.id.content_frame, fragment).addToBackStack("folders");
         fragmentTransaction.commit();
     }
-
-    private void onMenuSetup() {
-        startActivity(new Intent(ActivityView.this, ActivitySetup.class));
-    }
-
     private void onMenuAnswers() {
         FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
         fragmentTransaction.replace(R.id.content_frame, new FragmentAnswers()).addToBackStack("answers");
         fragmentTransaction.commit();
     }
-
     private void onMenuOperations() {
         FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
         fragmentTransaction.replace(R.id.content_frame, new FragmentOperations()).addToBackStack("operations");
         fragmentTransaction.commit();
     }
-
     private void onMenuLegend() {
         FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
         fragmentTransaction.replace(R.id.content_frame, new FragmentLegend()).addToBackStack("legend");
         fragmentTransaction.commit();
     }
-
     private void onMenuFAQ() {
         Helper.view(this, getIntentFAQ());
     }
-
     private void onMenuPro() {
         FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
         fragmentTransaction.replace(R.id.content_frame, new FragmentPro()).addToBackStack("pro");
         fragmentTransaction.commit();
     }
-
     private void onMenuPrivacy() {
         Helper.view(this, Helper.getIntentPrivacy());
     }
-
     private void onMenuAbout() {
         FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
         fragmentTransaction.replace(R.id.content_frame, new FragmentAbout()).addToBackStack("about");
         fragmentTransaction.commit();
-    }
-
-    private void onMenuRate() {
-        Intent faq = getIntentFAQ();
-        if (faq.resolveActivity(getPackageManager()) == null)
-            Helper.view(this, getIntentRate());
-        else {
-            new DialogBuilderLifecycle(this, this)
-                    .setMessage(R.string.title_issue)
-                    .setPositiveButton(R.string.title_yes, new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            Helper.view(ActivityView.this, getIntentFAQ());
-                        }
-                    })
-                    .setNegativeButton(R.string.title_no, new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            Helper.view(ActivityView.this, getIntentRate());
-                        }
-                    })
-                    .show();
-        }
-    }
-
-    private void onMenuInvite() {
-        startActivityForResult(getIntentInvite(), REQUEST_INVITE);
-    }
-
-    private void onMenuOtherApps() {
-        Helper.view(this, getIntentOtherApps());
     }
 
     private class DrawerItem {
@@ -804,7 +535,7 @@ public class ActivityView extends ActivityBilling implements FragmentManager.OnB
             DrawerItem item = getItem(position);
             View row = LayoutInflater.from(getContext()).inflate(item.layout, null);
 
-            ImageView iv = row.findViewById(R.id.ivItem);
+            CircularImageView iv = row.findViewById(R.id.ivItem);
             TextView tv = row.findViewById(R.id.tvItem);
 
             if (iv != null)
@@ -831,8 +562,6 @@ public class ActivityView extends ActivityBilling implements FragmentManager.OnB
                 onEditAnswer(intent);
             else if (ACTION_STORE_ATTACHMENT.equals(intent.getAction()))
                 onStoreAttachment(intent);
-            else if (ACTION_DECRYPT.equals(intent.getAction()))
-                onDecrypt(intent);
             else if (ACTION_SHOW_PRO.equals(intent.getAction()))
                 onShowPro(intent);
         }
@@ -900,135 +629,10 @@ public class ActivityView extends ActivityBilling implements FragmentManager.OnB
         startActivityForResult(create, REQUEST_ATTACHMENT);
     }
 
-    private void onDecrypt(Intent intent) {
-        if (Helper.isPro(this)) {
-            if (pgpService.isBound()) {
-                Intent data = new Intent();
-                data.setAction(OpenPgpApi.ACTION_DECRYPT_VERIFY);
-                data.putExtra(OpenPgpApi.EXTRA_USER_IDS, new String[]{intent.getStringExtra("to")});
-                data.putExtra(OpenPgpApi.EXTRA_REQUEST_ASCII_ARMOR, true);
-
-                decrypt(data, intent.getLongExtra("id", -1));
-            } else {
-                Snackbar snackbar = Snackbar.make(view, R.string.title_no_openpgp, Snackbar.LENGTH_LONG);
-                if (Helper.getIntentOpenKeychain().resolveActivity(getPackageManager()) != null)
-                    snackbar.setAction(R.string.title_fix, new View.OnClickListener() {
-                        @Override
-                        public void onClick(View v) {
-                            startActivity(Helper.getIntentOpenKeychain());
-                        }
-                    });
-                snackbar.show();
-            }
-        } else
-            onShowPro(intent);
-    }
-
     private void onShowPro(Intent intent) {
         FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
         fragmentTransaction.replace(R.id.content_frame, new FragmentPro()).addToBackStack("pro");
         fragmentTransaction.commit();
-    }
-
-    private void decrypt(Intent data, long id) {
-        Bundle args = new Bundle();
-        args.putLong("id", id);
-        args.putParcelable("data", data);
-
-        new SimpleTask<PendingIntent>() {
-            @Override
-            protected PendingIntent onLoad(Context context, Bundle args) throws Throwable {
-                // Get arguments
-                long id = args.getLong("id");
-                Intent data = args.getParcelable("data");
-
-                DB db = DB.getInstance(context);
-
-                // Find encrypted data
-                List<EntityAttachment> attachments = db.attachment().getAttachments(id);
-                for (EntityAttachment attachment : attachments)
-                    if (attachment.available && "encrypted.asc".equals(attachment.name)) {
-                        // Serialize encrypted data
-                        FileInputStream encrypted = new FileInputStream(EntityAttachment.getFile(context, attachment.id));
-                        ByteArrayOutputStream decrypted = new ByteArrayOutputStream();
-
-                        // Decrypt message
-                        OpenPgpApi api = new OpenPgpApi(context, pgpService.getService());
-                        Intent result = api.executeApi(data, encrypted, decrypted);
-                        switch (result.getIntExtra(OpenPgpApi.RESULT_CODE, OpenPgpApi.RESULT_CODE_ERROR)) {
-                            case OpenPgpApi.RESULT_CODE_SUCCESS:
-                                // Decode message
-                                Properties props = MessageHelper.getSessionProperties(Helper.AUTH_TYPE_PASSWORD, false);
-                                Session isession = Session.getInstance(props, null);
-                                ByteArrayInputStream is = new ByteArrayInputStream(decrypted.toByteArray());
-                                MimeMessage imessage = new MimeMessage(isession, is);
-                                MessageHelper helper = new MessageHelper(imessage);
-
-                                try {
-                                    db.beginTransaction();
-
-                                    // Write decrypted body
-                                    EntityMessage m = db.message().getMessage(id);
-                                    m.write(context, helper.getHtml());
-
-                                    // Remove previously decrypted attachments
-                                    for (EntityAttachment a : attachments)
-                                        if (!"encrypted.asc".equals(a.name))
-                                            db.attachment().deleteAttachment(a.id);
-
-                                    // Add decrypted attachments
-                                    int sequence = db.attachment().getAttachmentSequence(id);
-                                    for (EntityAttachment a : helper.getAttachments()) {
-                                        a.message = id;
-                                        a.sequence = ++sequence;
-                                        a.id = db.attachment().insertAttachment(a);
-                                    }
-
-                                    db.message().setMessageStored(id, new Date().getTime());
-
-                                    db.setTransactionSuccessful();
-                                } finally {
-                                    db.endTransaction();
-                                }
-
-                                break;
-
-                            case OpenPgpApi.RESULT_CODE_USER_INTERACTION_REQUIRED:
-                                message = id;
-                                return result.getParcelableExtra(OpenPgpApi.RESULT_INTENT);
-
-                            case OpenPgpApi.RESULT_CODE_ERROR:
-                                OpenPgpError error = result.getParcelableExtra(OpenPgpApi.RESULT_ERROR);
-                                throw new IllegalArgumentException(error.getMessage());
-                        }
-
-                        break;
-                    }
-
-                return null;
-            }
-
-            @Override
-            protected void onLoaded(Bundle args, PendingIntent pi) {
-                if (pi != null)
-                    try {
-                        startIntentSenderForResult(
-                                pi.getIntentSender(),
-                                ActivityView.REQUEST_DECRYPT,
-                                null, 0, 0, 0, null);
-                    } catch (IntentSender.SendIntentException ex) {
-                        Helper.unexpectedError(ActivityView.this, ex);
-                    }
-            }
-
-            @Override
-            protected void onException(Bundle args, Throwable ex) {
-                if (ex instanceof IllegalArgumentException)
-                    Snackbar.make(view, ex.getMessage(), Snackbar.LENGTH_LONG).show();
-                else
-                    Helper.unexpectedError(ActivityView.this, ex);
-            }
-        }.load(ActivityView.this, args);
     }
 
     @Override
@@ -1036,71 +640,65 @@ public class ActivityView extends ActivityBilling implements FragmentManager.OnB
         Log.i(Helper.TAG, "View onActivityResult request=" + requestCode + " result=" + resultCode + " data=" + data);
         if (resultCode == Activity.RESULT_OK)
             if (requestCode == REQUEST_ATTACHMENT) {
-                if (data != null) {
-                    Bundle args = new Bundle();
-                    args.putLong("id", attachment);
-                    args.putParcelable("uri", data.getData());
+                Bundle args = new Bundle();
+                args.putLong("id", attachment);
+                args.putParcelable("uri", data.getData());
+                new SimpleTask<Void>() {
+                    @Override
+                    protected Void onLoad(Context context, Bundle args) throws Throwable {
+                        long id = args.getLong("id");
+                        Uri uri = args.getParcelable("uri");
 
-                    new SimpleTask<Void>() {
-                        @Override
-                        protected Void onLoad(Context context, Bundle args) throws Throwable {
-                            long id = args.getLong("id");
-                            Uri uri = args.getParcelable("uri");
+                        File file = EntityAttachment.getFile(context, id);
 
-                            File file = EntityAttachment.getFile(context, id);
+                        ParcelFileDescriptor pfd = null;
+                        FileOutputStream fos = null;
+                        FileInputStream fis = null;
+                        try {
+                            pfd = context.getContentResolver().openFileDescriptor(uri, "w");
+                            fos = new FileOutputStream(pfd.getFileDescriptor());
+                            fis = new FileInputStream(file);
 
-                            ParcelFileDescriptor pfd = null;
-                            FileOutputStream fos = null;
-                            FileInputStream fis = null;
-                            try {
-                                pfd = context.getContentResolver().openFileDescriptor(uri, "w");
-                                fos = new FileOutputStream(pfd.getFileDescriptor());
-                                fis = new FileInputStream(file);
-
-                                byte[] buffer = new byte[ATTACHMENT_BUFFER_SIZE];
-                                int read;
-                                while ((read = fis.read(buffer)) != -1) {
-                                    fos.write(buffer, 0, read);
-                                }
-                            } finally {
-                                try {
-                                    if (pfd != null)
-                                        pfd.close();
-                                } catch (Throwable ex) {
-                                    Log.w(Helper.TAG, ex + "\n" + Log.getStackTraceString(ex));
-                                }
-                                try {
-                                    if (fos != null)
-                                        fos.close();
-                                } catch (Throwable ex) {
-                                    Log.w(Helper.TAG, ex + "\n" + Log.getStackTraceString(ex));
-                                }
-                                try {
-                                    if (fis != null)
-                                        fis.close();
-                                } catch (Throwable ex) {
-                                    Log.w(Helper.TAG, ex + "\n" + Log.getStackTraceString(ex));
-                                }
+                            byte[] buffer = new byte[ATTACHMENT_BUFFER_SIZE];
+                            int read;
+                            while ((read = fis.read(buffer)) != -1) {
+                                fos.write(buffer, 0, read);
                             }
-
-                            return null;
+                        } finally {
+                            try {
+                                if (pfd != null)
+                                    pfd.close();
+                            } catch (Throwable ex) {
+                                Log.w(Helper.TAG, ex + "\n" + Log.getStackTraceString(ex));
+                            }
+                            try {
+                                if (fos != null)
+                                    fos.close();
+                            } catch (Throwable ex) {
+                                Log.w(Helper.TAG, ex + "\n" + Log.getStackTraceString(ex));
+                            }
+                            try {
+                                if (fis != null)
+                                    fis.close();
+                            } catch (Throwable ex) {
+                                Log.w(Helper.TAG, ex + "\n" + Log.getStackTraceString(ex));
+                            }
                         }
 
-                        @Override
-                        protected void onLoaded(Bundle args, Void data) {
-                            Toast.makeText(ActivityView.this, R.string.title_attachment_saved, Toast.LENGTH_LONG).show();
-                        }
+                        return null;
+                    }
 
-                        @Override
-                        protected void onException(Bundle args, Throwable ex) {
-                            Log.e(Helper.TAG, ex + "\n" + Log.getStackTraceString(ex));
-                            Helper.unexpectedError(ActivityView.this, ex);
-                        }
-                    }.load(this, args);
-                }
-            } else if (requestCode == REQUEST_DECRYPT) {
-                if (data != null)
-                    decrypt(data, message);
+                    @Override
+                    protected void onLoaded(Bundle args, Void data) {
+                        Toast.makeText(ActivityView.this, R.string.title_attachment_saved, Toast.LENGTH_LONG).show();
+                    }
+
+                    @Override
+                    protected void onException(Bundle args, Throwable ex) {
+                        Log.e(Helper.TAG, ex + "\n" + Log.getStackTraceString(ex));
+                        Helper.unexpectedError(ActivityView.this, ex);
+                    }
+                }.load(this, args);
             }
     }
 }

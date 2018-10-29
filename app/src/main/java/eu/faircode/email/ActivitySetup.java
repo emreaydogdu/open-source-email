@@ -51,7 +51,7 @@ public class ActivitySetup extends ActivityBilling implements FragmentManager.On
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_setup);
 
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        //getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
         getSupportFragmentManager().addOnBackStackChangedListener(this);
 

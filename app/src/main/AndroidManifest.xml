@@ -45,13 +45,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
         <activity
             android:name=".ActivitySetup"
             android:exported="false"
             android:launchMode="singleInstance"
             android:parentActivityName=".ActivityMain" />
-
         <activity
             android:name=".ActivityView"
             android:exported="true"
@@ -59,11 +57,12 @@
             android:parentActivityName=".ActivityMain">
             <intent-filter>
                 <action android:name="android.intent.action.PROCESS_TEXT" />
+
                 <category android:name="android.intent.category.DEFAULT" />
+
                 <data android:mimeType="text/plain" />
             </intent-filter>
         </activity>
-
         <activity
             android:name=".ActivityCompose"
             android:exported="true"
@@ -74,24 +73,28 @@
                 <action android:name="android.intent.action.SEND_MULTIPLE" />
 
                 <data android:mimeType="*/*" />
+
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.SENDTO" />
+
                 <data android:scheme="mailto" />
+
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
+
                 <data android:scheme="mailto" />
 
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
             </intent-filter>
         </activity>
+        <activity android:name=".activities.ActivityFolder" />
 
         <service android:name=".ServiceSynchronize" />
-
         <service
             android:name=".JobDaily"
             android:exported="true"
@@ -113,11 +116,11 @@
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
+
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/widget" />
         </receiver>
-
         <receiver android:name=".ReceiverAutostart">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
@@ -126,5 +129,8 @@
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
             </intent-filter>
         </receiver>
+
+        <activity android:name=".ActivityMessage"></activity>
     </application>
+
 </manifest>

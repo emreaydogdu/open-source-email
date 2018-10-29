@@ -33,7 +33,7 @@
             android:layout_height="32dp"
             android:layout_gravity="center_vertical|center_horizontal"
             android:src="@drawable/baseline_expand_less_24"
-            android:visibility="visible"
+            android:visibility="gone"
             app:layout_constraintBottom_toBottomOf="@+id/paddingBottom"
             app:layout_constraintStart_toEndOf="@id/vwColor"
             app:layout_constraintTop_toTopOf="@id/paddingTop" />
@@ -221,6 +221,7 @@
             android:layout_marginStart="6dp"
             android:text="@string/title_from"
             android:textAppearance="@style/TextAppearance.AppCompat.Small"
+            android:visibility="gone"
             app:layout_constraintStart_toEndOf="@id/vwColor"
             app:layout_constraintTop_toBottomOf="@id/vSeparatorAddress" />
 
@@ -499,12 +500,14 @@
             android:id="@+id/grpHeaders"
             android:layout_width="0dp"
             android:layout_height="0dp"
+            android:visibility="gone"
             app:constraint_referenced_ids="vSeparatorHeaders,tvHeaders" />
 
         <androidx.constraintlayout.widget.Group
             android:id="@+id/grpAttachments"
             android:layout_width="0dp"
             android:layout_height="0dp"
+            android:visibility="gone"
             app:constraint_referenced_ids="vSeparatorAttachments,rvAttachment" />
 
         <androidx.constraintlayout.widget.Group

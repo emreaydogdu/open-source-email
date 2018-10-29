@@ -1,24 +1,5 @@
 package eu.faircode.email;
 
-/*
-    This file is part of FairEmail.
-
-    FairEmail is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    FairEmail is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with FairEmail.  If not, see <http://www.gnu.org/licenses/>.
-
-    Copyright 2018 by Marcel Bokhorst (M66B)
-*/
-
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -35,7 +16,6 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
@@ -74,12 +54,9 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 public class FragmentMessages extends FragmentEx {
+
     private ViewGroup view;
     private View popupAnchor;
-    private TextView tvSupport;
-    private ImageButton ibHintSupport;
-    private ImageButton ibHintSwipe;
-    private ImageButton ibHintSelect;
     private TextView tvNoEmail;
     private RecyclerView rvMessage;
     private BottomNavigationView bottom_navigation;
@@ -154,10 +131,6 @@ public class FragmentMessages extends FragmentEx {
 
         // Get controls
         popupAnchor = view.findViewById(R.id.popupAnchor);
-        tvSupport = view.findViewById(R.id.tvSupport);
-        ibHintSupport = view.findViewById(R.id.ibHintSupport);
-        ibHintSwipe = view.findViewById(R.id.ibHintSwipe);
-        ibHintSelect = view.findViewById(R.id.ibHintSelect);
         tvNoEmail = view.findViewById(R.id.tvNoEmail);
         rvMessage = view.findViewById(R.id.rvFolder);
         bottom_navigation = view.findViewById(R.id.bottom_navigation);
@@ -172,40 +145,6 @@ public class FragmentMessages extends FragmentEx {
 
         final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getContext());
 
-        // Wire controls
-
-        tvSupport.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                FragmentTransaction fragmentTransaction = getFragmentManager().beginTransaction();
-                fragmentTransaction.replace(R.id.content_frame, new FragmentPro()).addToBackStack("pro");
-                fragmentTransaction.commit();
-            }
-        });
-
-        ibHintSwipe.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                prefs.edit().putBoolean("message_swipe", true).apply();
-                grpHintSwipe.setVisibility(View.GONE);
-            }
-        });
-
-        ibHintSelect.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                prefs.edit().putBoolean("message_select", true).apply();
-                grpHintSelect.setVisibility(View.GONE);
-            }
-        });
-
-        ibHintSupport.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                prefs.edit().putBoolean("app_support", true).apply();
-                grpHintSupport.setVisibility(View.GONE);
-            }
-        });
 
         rvMessage.setHasFixedSize(false);
         LinearLayoutManager llm = new LinearLayoutManager(getContext());
@@ -549,137 +488,115 @@ public class FragmentMessages extends FragmentEx {
         fabMove.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (Helper.isPro(getContext())) {
-                    Bundle args = new Bundle();
-                    args.putLong("folder", folder);
+                Bundle args = new Bundle();
+                args.putLong("folder", folder);
 
-                    new SimpleTask<List<EntityFolder>>() {
-                        @Override
-                        protected List<EntityFolder> onLoad(Context context, Bundle args) {
-                            long folder = args.getLong("folder");
-                            DB db = DB.getInstance(context);
+                new SimpleTask<List<EntityFolder>>() {
+                    @Override
+                    protected List<EntityFolder> onLoad(Context context, Bundle args) {
+                        long folder = args.getLong("folder");
+                        DB db = DB.getInstance(context);
 
-                            EntityFolder source = db.folder().getFolder(folder);
-                            List<EntityFolder> folders = db.folder().getFolders(source.account);
-                            List<EntityFolder> targets = new ArrayList<>();
-                            for (EntityFolder f : folders)
-                                if (!f.id.equals(folder) && !EntityFolder.DRAFTS.equals(f.type))
-                                    targets.add(f);
+                        EntityFolder source = db.folder().getFolder(folder);
+                        List<EntityFolder> folders = db.folder().getFolders(source.account);
+                        List<EntityFolder> targets = new ArrayList<>();
+                        for (EntityFolder f : folders)
+                            if (!f.id.equals(folder) && !EntityFolder.DRAFTS.equals(f.type))
+                                targets.add(f);
 
-                            final Collator collator = Collator.getInstance(Locale.getDefault());
-                            collator.setStrength(Collator.SECONDARY); // Case insensitive, process accents etc
+                        final Collator collator = Collator.getInstance(Locale.getDefault());
+                        collator.setStrength(Collator.SECONDARY); // Case insensitive, process accents etc
 
-                            Collections.sort(targets, new Comparator<EntityFolder>() {
-                                @Override
-                                public int compare(EntityFolder f1, EntityFolder f2) {
-                                    int s = Integer.compare(
-                                            EntityFolder.FOLDER_SORT_ORDER.indexOf(f1.type),
-                                            EntityFolder.FOLDER_SORT_ORDER.indexOf(f2.type));
-                                    if (s != 0)
-                                        return s;
-                                    return collator.compare(
-                                            f1.name == null ? "" : f1.name,
-                                            f2.name == null ? "" : f2.name);
-                                }
-                            });
+                        Collections.sort(targets, new Comparator<EntityFolder>() {
+                            @Override
+                            public int compare(EntityFolder f1, EntityFolder f2) {
+                                int s = Integer.compare(
+                                        EntityFolder.FOLDER_SORT_ORDER.indexOf(f1.type),
+                                        EntityFolder.FOLDER_SORT_ORDER.indexOf(f2.type));
+                                if (s != 0)
+                                    return s;
+                                return collator.compare(
+                                        f1.name == null ? "" : f1.name,
+                                        f2.name == null ? "" : f2.name);
+                            }
+                        });
 
-                            return targets;
+                        return targets;
+                    }
+
+                    @Override
+                    protected void onLoaded(final Bundle args, List<EntityFolder> folders) {
+                        PopupMenu popupMenu = new PopupMenu(getContext(), popupAnchor);
+
+                        int order = 0;
+                        for (EntityFolder folder : folders) {
+                            String name = (folder.display == null
+                                    ? Helper.localizeFolderName(getContext(), folder.name)
+                                    : folder.display);
+                            popupMenu.getMenu().add(Menu.NONE, folder.id.intValue(), order++, name);
                         }
 
-                        @Override
-                        protected void onLoaded(final Bundle args, List<EntityFolder> folders) {
-                            PopupMenu popupMenu = new PopupMenu(getContext(), popupAnchor);
+                        popupMenu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
+                            @Override
+                            public boolean onMenuItemClick(final MenuItem target) {
+                                MutableSelection<Long> selection = new MutableSelection<>();
+                                selectionTracker.copySelection(selection);
 
-                            int order = 0;
-                            for (EntityFolder folder : folders) {
-                                String name = (folder.display == null
-                                        ? Helper.localizeFolderName(getContext(), folder.name)
-                                        : folder.display);
-                                popupMenu.getMenu().add(Menu.NONE, folder.id.intValue(), order++, name);
-                            }
+                                long[] ids = new long[selection.size()];
+                                int i = 0;
+                                for (Long id : selection)
+                                    ids[i++] = id;
 
-                            popupMenu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
-                                @Override
-                                public boolean onMenuItemClick(final MenuItem target) {
-                                    MutableSelection<Long> selection = new MutableSelection<>();
-                                    selectionTracker.copySelection(selection);
+                                selectionTracker.clearSelection();
 
-                                    long[] ids = new long[selection.size()];
-                                    int i = 0;
-                                    for (Long id : selection)
-                                        ids[i++] = id;
+                                args.putLongArray("ids", ids);
+                                args.putLong("target", target.getItemId());
 
-                                    selectionTracker.clearSelection();
+                                new SimpleTask<Void>() {
+                                    @Override
+                                    protected Void onLoad(Context context, Bundle args) {
+                                        long[] ids = args.getLongArray("ids");
+                                        long target = args.getLong("target");
 
-                                    args.putLongArray("ids", ids);
-                                    args.putLong("target", target.getItemId());
+                                        DB db = DB.getInstance(context);
+                                        try {
+                                            db.beginTransaction();
 
-                                    new SimpleTask<Void>() {
-                                        @Override
-                                        protected Void onLoad(Context context, Bundle args) {
-                                            long[] ids = args.getLongArray("ids");
-                                            long target = args.getLong("target");
+                                            for (long id : ids) {
+                                                db.message().setMessageUiHide(id, true);
 
-                                            DB db = DB.getInstance(context);
-                                            try {
-                                                db.beginTransaction();
-
-                                                for (long id : ids) {
-                                                    EntityMessage message = db.message().getMessage(id);
-                                                    List<EntityMessage> messages =
-                                                            db.message().getMessageByThread(message.account, message.thread);
-                                                    for (EntityMessage threaded : messages) {
-                                                        if (threaded.folder.equals(message.folder)) {
-                                                            db.message().setMessageUiHide(threaded.id, true);
-                                                            EntityOperation.queue(db, threaded, EntityOperation.MOVE, target);
-                                                        }
-                                                    }
-                                                }
-
-                                                db.setTransactionSuccessful();
-                                            } finally {
-                                                db.endTransaction();
+                                                EntityMessage message = db.message().getMessage(id);
+                                                EntityOperation.queue(db, message, EntityOperation.MOVE, target);
                                             }
 
-                                            EntityOperation.process(context);
-
-                                            return null;
+                                            db.setTransactionSuccessful();
+                                        } finally {
+                                            db.endTransaction();
                                         }
 
-                                        @Override
-                                        protected void onException(Bundle args, Throwable ex) {
-                                            Helper.unexpectedError(getContext(), ex);
-                                        }
-                                    }.load(FragmentMessages.this, args);
+                                        EntityOperation.process(context);
 
-                                    return true;
-                                }
-                            });
+                                        return null;
+                                    }
 
-                            popupMenu.show();
-                        }
+                                    @Override
+                                    protected void onException(Bundle args, Throwable ex) {
+                                        Helper.unexpectedError(getContext(), ex);
+                                    }
+                                }.load(FragmentMessages.this, args);
 
-                        @Override
-                        protected void onException(Bundle args, Throwable ex) {
-                            Helper.unexpectedError(getContext(), ex);
-                        }
-                    }.load(FragmentMessages.this, args);
-                } else {
-                    FragmentTransaction fragmentTransaction = getFragmentManager().beginTransaction();
-                    fragmentTransaction.replace(R.id.content_frame, new FragmentPro()).addToBackStack("pro");
-                    fragmentTransaction.commit();
-                }
-            }
-        });
+                                return true;
+                            }
+                        });
 
-        ((ActivityBase) getActivity()).addBackPressedListener(new ActivityBase.IBackPressedListener() {
-            @Override
-            public boolean onBackPressed() {
-                if (selectionTracker != null && selectionTracker.hasSelection()) {
-                    selectionTracker.clearSelection();
-                    return true;
-                }
-                return false;
+                        popupMenu.show();
+                    }
+
+                    @Override
+                    protected void onException(Bundle args, Throwable ex) {
+                        Helper.unexpectedError(getContext(), ex);
+                    }
+                }.load(FragmentMessages.this, args);
             }
         });
 

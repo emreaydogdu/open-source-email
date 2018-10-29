@@ -1424,7 +1424,7 @@ public class ServiceSynchronize extends LifecycleService {
     }
 
     private void doBody(EntityFolder folder, IMAPFolder ifolder, EntityMessage message, DB db) throws MessagingException, IOException {
-        // Download message body
+        // download message body
         if (message.content)
             return;
 
@@ -1439,7 +1439,7 @@ public class ServiceSynchronize extends LifecycleService {
     }
 
     private void doAttachment(EntityFolder folder, EntityOperation op, IMAPFolder ifolder, EntityMessage message, JSONArray jargs, DB db) throws JSONException, MessagingException, IOException {
-        // Download attachment
+        // download attachment
         int sequence = jargs.getInt(0);
 
         // Get attachment
@@ -1452,7 +1452,7 @@ public class ServiceSynchronize extends LifecycleService {
         if (imessage == null)
             throw new MessageRemovedException();
 
-        // Download attachment
+        // download attachment
         MessageHelper helper = new MessageHelper((MimeMessage) imessage);
         EntityAttachment a = helper.getAttachments().get(sequence - 1);
         attachment.part = a.part;
@@ -1642,7 +1642,7 @@ public class ServiceSynchronize extends LifecycleService {
 
             //fp.add(IMAPFolder.FetchProfileItem.MESSAGE);
 
-            // Download messages/attachments
+            // download messages/attachments
             Log.i(Helper.TAG, folder.name + " download=" + imessages.length);
             for (int i = imessages.length - 1; i >= 0; i -= DOWNLOAD_BATCH_SIZE) {
                 int from = Math.max(0, i - DOWNLOAD_BATCH_SIZE + 1);

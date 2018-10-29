@@ -60,6 +60,7 @@ import javax.mail.internet.MimeMultipart;
 import javax.mail.internet.ParseException;
 
 public class MessageHelper {
+
     private MimeMessage imessage;
     private String raw = null;
 

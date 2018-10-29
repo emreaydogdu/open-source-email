@@ -7,7 +7,7 @@
     <attr name="colorDrawerBackground" format="reference" />
     <attr name="drawableItemBackground" format="reference" />
 
-    <style name="AppThemeLight" parent="Base.Theme.AppCompat.Light.DarkActionBar">
+    <style name="AppThemeLight" parent="Theme.AppCompat.Light.NoActionBar">
         <item name="android:windowDisablePreview">true</item>
 
         <item name="colorPrimary">@color/colorPrimary</item>
@@ -76,4 +76,19 @@
     <style name="buttonStyleToggle" parent="Base.Widget.AppCompat.Button">
         <item name="android:textAppearance">@style/TextAppearance.AppCompat.Medium</item>
     </style>
+
+
+
+    <!-- set the rounded drawable as background to your bottom sheet -->
+    <style name="BottomSheet" parent="@style/Widget.Design.BottomSheet.Modal">
+        <item name="android:background">@drawable/bg_bottom_sheet_dialog_fragment</item>
+    </style>
+
+    <style name="BaseBottomSheetDialog" parent="@style/Theme.Design.Light.BottomSheetDialog">
+        <item name="android:windowIsFloating">false</item>
+        <item name="bottomSheetStyle">@style/BottomSheet</item>
+    </style>
+
+    <style name="BottomSheetDialogTheme" parent="BaseBottomSheetDialog" />
+
 </resources>

@@ -1,6 +1,5 @@
 package eu.faircode.email;
 
-
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;

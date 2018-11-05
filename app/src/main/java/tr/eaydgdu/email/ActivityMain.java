@@ -45,6 +45,7 @@ public class ActivityMain extends AppCompatActivity implements FragmentManager.O
                 }
             });
         } else {
+            super.onCreate(savedInstanceState);
             setTheme(R.style.AppThemeLight);
             setContentView(R.layout.activity_main);
 

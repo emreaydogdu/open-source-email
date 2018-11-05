@@ -20,6 +20,7 @@
         <item name="colorDrawerScrim">@color/lightColorDrawerScrim</item>
         <item name="colorDrawerText">@color/lightColorDrawerText</item>
         <item name="colorDrawerBackground">@color/lightColorDrawerBackground</item>
+        <item name="android:colorBackground">@color/lightColorDrawerBackground</item>
 
         <item name="drawableItemBackground">@drawable/item_background_light</item>
 

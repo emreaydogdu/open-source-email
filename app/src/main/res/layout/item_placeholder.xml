@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout android:id="@+id/message"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+        <androidx.cardview.widget.CardView
+            android:id="@+id/back"
+            android:layout_width="46dp"
+            android:layout_height="46dp"
+            android:layout_marginStart="39dp"
+            android:layout_marginTop="16dp"
+            app:cardBackgroundColor="#DDDDDD"
+            app:cardCornerRadius="23dp"
+            app:cardElevation="0dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <androidx.cardview.widget.CardView
+            android:id="@+id/tvFrom"
+            android:layout_width="50dp"
+            android:layout_height="14dp"
+            android:layout_marginStart="18dp"
+            android:layout_marginTop="18dp"
+            app:cardBackgroundColor="#DDDDDD"
+            app:cardCornerRadius="7dp"
+            app:cardElevation="0dp"
+            app:layout_constraintStart_toEndOf="@+id/back"
+            app:layout_constraintTop_toTopOf="parent" />
+
+
+        <androidx.cardview.widget.CardView
+            android:id="@+id/tvSubject"
+            android:layout_width="80dp"
+            android:layout_height="16dp"
+            android:layout_marginStart="18dp"
+            android:layout_marginTop="8dp"
+            app:cardBackgroundColor="#DDDDDD"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="0dp"
+            app:layout_constraintStart_toEndOf="@+id/back"
+            app:layout_constraintTop_toBottomOf="@id/tvFrom" />
+
+        <androidx.cardview.widget.CardView
+            android:id="@+id/tvBody"
+            android:layout_width="0dp"
+            android:layout_height="70dp"
+            android:layout_marginStart="18dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="16dp"
+            app:cardBackgroundColor="#DDDDDD"
+            app:cardCornerRadius="15dp"
+            app:cardElevation="0dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/back"
+            app:layout_constraintTop_toBottomOf="@+id/tvSubject" />
+
+
+        <androidx.cardview.widget.CardView
+            android:id="@+id/tvTime"
+            android:layout_width="50dp"
+            android:layout_height="14dp"
+            android:layout_marginEnd="24dp"
+            android:visibility="invisible"
+            app:cardBackgroundColor="#DDDDDD"
+            app:cardCornerRadius="7dp"
+            app:cardElevation="0dp"
+            app:layout_constraintBottom_toBottomOf="@id/tvFrom"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@id/tvFrom" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>

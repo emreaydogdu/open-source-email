@@ -42,7 +42,7 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/inbox" />
 
-            <eu.faircode.email.views.CircularImageView
+            <tr.eaydgdu.email.views.CircularImageView
                 android:id="@+id/menu"
                 android:layout_width="50dp"
                 android:layout_height="50dp"

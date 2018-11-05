@@ -3,7 +3,7 @@ apply plugin: 'com.android.application'
 android {
     compileSdkVersion 28
     defaultConfig {
-        applicationId "eu.faircode.email"
+        applicationId "tr.eaydgdu.email"
         minSdkVersion 23
         targetSdkVersion 28
         versionCode 200
@@ -89,10 +89,12 @@ dependencies {
     implementation "androidx.recyclerview:recyclerview-selection:$androidx_version"
     implementation "androidx.coordinatorlayout:coordinatorlayout:$androidx_version"
     implementation "androidx.constraintlayout:constraintlayout:$constraintlayout_version"
+    implementation "androidx.percentlayout:percentlayout:1.0.0"
     implementation "com.google.android.material:material:$androidx_version"
     implementation "androidx.browser:browser:$androidx_version"
 
     implementation "androidx.lifecycle:lifecycle-extensions:$lifecycle_version"
+    implementation 'com.android.support.constraint:constraint-layout:1.1.3'
     annotationProcessor "androidx.lifecycle:lifecycle-compiler:$lifecycle_version"
 
     implementation "androidx.room:room-runtime:$room_version"
@@ -117,4 +119,7 @@ dependencies {
 
     // git clone https://android.googlesource.com/platform/frameworks/opt/colorpicker
     implementation project(path: ':colorpicker')
+
+
+    implementation 'com.facebook.shimmer:shimmer:0.3.0'
 }

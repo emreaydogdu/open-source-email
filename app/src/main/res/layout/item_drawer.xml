@@ -6,7 +6,7 @@
     android:paddingEnd="?android:attr/listPreferredItemPaddingEnd"
     android:paddingStart="?android:attr/listPreferredItemPaddingStart">
 
-    <eu.faircode.email.views.CircularImageView
+    <tr.eaydgdu.email.views.CircularImageView
         android:id="@+id/ivItem"
         android:layout_width="36dp"
         android:layout_height="36dp"

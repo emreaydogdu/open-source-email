@@ -37,27 +37,43 @@ The low priority status bar notification shows the number of pending operations,
 * delete: delete message from remote folder
 * send: send message
 * seen: mark message as seen/unseen in remote folder
-* flag: star/unstar remote message
+* flag: add/remove stars
 * headers: download message headers
 * body: download message text
 * attachment: download attachment
 
 Operations are processed only when there is a connection to the email server or when manually synchronizing.
-See also [this FAQ](#FAQ16).
+See also [this FAQ](#user-content-FAQ16).
 
 <a name="FAQ4"></a>
-**(4) What is a valid security certificate?**
+**(4) How can I use an invalid security certificate / IMAP STARTTLS / an empty password?**
 
-Valid security certificates are officially signed (not self signed) and have matching a host name.
+Invalid security certificate: you should try to fix this by contacting your provider or by getting a valid security certificate
+because invalid security certificates are insecure and allow [man-in-the-middle attacks](https://en.wikipedia.org/wiki/Man-in-the-middle_attack).
+If money is an obstacle, you can get free security certificates from [Let’s Encrypt](https://letsencrypt.org).
+
+IMAP STARTTLS: the EFF [writes](https://www.eff.org/nl/deeplinks/2018/06/announcing-starttls-everywhere-securing-hop-hop-email-delivery):
+"*Additionally, even if you configure STARTTLS perfectly and use a valid certificate, there’s still no guarantee your communication will be encrypted.*"
+
+Empty password: your username is likely easily guessed, so this is very insecure.
+
+If you still want to use an invalid security certificate, IMAP STARTTLS or an empty password,
+you'll need to enable insecure connections in the advanced settings and also in the account and/or identity settings.
+Additionally, IMAP STARTTLS needs to be enabled in the account settings too.
 
 <a name="FAQ5"></a>
-~~**(5) What does 'no IDLE support' mean?**~~
+**(5) How can I customize the message view?**
 
-~~Without [IMAP IDLE](https://en.wikipedia.org/wiki/IMAP_IDLE) emails need to be periodically fetched,~~
-~~which is a waste of battery power and internet bandwidth and will delay notification of new emails.~~
-~~Since the goal of FairEmail is to offer safe and fast email, providers without IMAP IDLE are not supported.~~
-~~You should consider this a problem of the provider, not of the app.~~
-~~Almost all email providers offer IMAP IDLE, with as notable exception Yahoo!~~
+In the advanced settings you can enable or disable:
+
+* *compact message view*: for more condensed message items and a smaller message text font
+* *show contact photos*: to hide contact photos
+* *show identicons*: to show generated contact avatars
+* *show message preview*: to show two lines of the message text
+
+If the list of addresses is long, you can collapse the addresses section with the *less* icon at the top of the addresses section.
+
+Unfortunately, it is impossible to make everybody happy and adding lots of settings would not only be confusing, but also never be sufficient.
 
 <a name="FAQ6"></a>
 **(6) How can I login to Gmail / G suite?**
@@ -115,14 +131,18 @@ So, unless your provider can enable this extension, you cannot use FairEmail for
 
 First of all you need to install and configure [OpenKeychain](https://f-droid.org/en/packages/org.sufficientlysecure.keychain/).
 To encrypt a message before sending, just select the menu *Encrypt*. Similarly, to decrypt a received message, just select the menu *Decrypt*.
+Encryption is [Autocrypt](https://autocrypt.org/) compatible. For security reasons received messages are not decrypted automatically.
+Encryption/decryption is a pro feature.
 
 <a name="FAQ13"></a>
 **(13) How does search on server work?**
 
 You can start searching for messages on sender, recipient, subject or message text by using the magnify glass in the action bar of a folder (not in the unified inbox because it could be a collection of folders).
-The server executes the search. Scrolling down will fetch more messages from the server.
+First local messages will be searched and after that the server will execute the search.
+Searching local messages is case insensitive and on partial text.
+The message text of local messages will not be searched if the message text was not downloaded yet.
 Searching by the server might be case sensitive or case insensitive and might be on partial text or whole words, depending on the provider.
-Search on server is a pro feature.
+Searching messages is a pro feature.
 
 <a name="FAQ14"></a>
 **(14) How can I setup Outlook with 2FA?**
@@ -131,11 +151,13 @@ To use Outlook with two factor authentication enabled, you need to create an app
 See [here](https://support.microsoft.com/en-us/help/12409/microsoft-account-app-passwords-two-step-verification) for the details.
 
 <a name="FAQ15"></a>
-**(15) Can you add ... ?**
+**(15) Why does the message text keep loading?**
 
-* More themes/black theme: the goal is to keep the app as simple as possible, so no more themes will not be added.
-* Previewing message text in notification/widget: this is not always possible because the message text is initially not downloaded for larger messages.
-* Executing filter rules: filter rules should be executed on the server because a battery powered device with possibly an unstable internet connection is not suitable for this.
+The message header and message body are fetched separately from the server.
+The message text of larger messages is not being pre-fetched on metered connections and need to be fetched on opening the message.
+The message text will keep loading if there is no connection to the account, see also the next question.
+
+In the advanced settings you can set the maximum size for automatically downloading of messages on metered connections.
 
 <a name="FAQ16"></a>
 **(16) Why are messages not being synchronized?**
@@ -162,6 +184,12 @@ stop apps and services too aggressively.
 If the *Synchronize now* menu is dimmed, there is no connection to the account.
 
 See the previous question for more information.
+
+<a name="FAQ18"></a>
+**(18) Why is the message preview not always shown?**
+
+The preview of the message text cannot be shown if the message body has not been downloaded yet.
+See also [this FAQ](#user-content-FAQ15).
 
 <a name="FAQ19"></a>
 **(19) Why are the pro features so expensive?**
@@ -231,14 +259,14 @@ when you reach the end of the list of synchronized messages, even when the folde
 You can disable this feature under *Setup* > *Advanced options* > *Browse messages on the server*.
 
 <a name="FAQ25"></a>
-**(25) Why can't I select an image, attachment or a file to export/import?**
+**(25) Why can't I select/open/save an image, attachment or a file?**
 
-If a menu item to select a file is disabled (dimmed),
-likely the [storage access framework](https://developer.android.com/guide/topics/providers/document-provider),
-a standard Android component, is not present,
+If a menu item to select/open/save a file is disabled (dimmed),
+the [storage access framework](https://developer.android.com/guide/topics/providers/document-provider),
+a standard Android component, is probably not present,
 for example because your custom ROM does not include it or because it was removed.
 FairEmail does not request storage permissions, so this framework is required to select files and folders.
-No app, except maybe file managers, targetting Android 4.4 KitKat or later should ask for storage permissions because it would allow access to *all* files.
+No app, except maybe file managers, targeting Android 4.4 KitKat or later should ask for storage permissions because it would allow access to *all* files.
 
 <a name="FAQ26"></a>
 **(26) Can I help to translate FairEmail in my own language?**

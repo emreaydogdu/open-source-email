@@ -44,25 +44,37 @@
                 app:srcCompat="@drawable/ic_trash" />
 
             <ImageView
-                android:id="@+id/delete2"
+                android:id="@+id/star"
                 android:layout_width="wrap_content"
-                android:layout_height="0dp"
+                android:layout_height="wrap_content"
                 android:layout_marginEnd="32dp"
-                android:layout_marginBottom="10dp"
                 android:tint="#FF7D8CA6"
+                app:layout_constraintBottom_toBottomOf="@+id/delete"
+                app:layout_constraintEnd_toStartOf="@+id/delete"
+                app:layout_constraintTop_toTopOf="@+id/delete"
+                app:srcCompat="@drawable/ic_star" />
+
+            <com.airbnb.lottie.LottieAnimationView
+                android:id="@+id/star_anim"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:layout_marginEnd="29dp"
+                android:layout_marginBottom="10dp"
+                android:visibility="gone"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toStartOf="@+id/delete"
-                app:srcCompat="@drawable/ic_star" />
+                app:layout_constraintTop_toTopOf="@+id/delete"
+                app:lottie_rawRes="@raw/star" />
 
             <ImageView
                 android:id="@+id/delete3"
                 android:layout_width="wrap_content"
                 android:layout_height="0dp"
-                android:layout_marginEnd="32dp"
+                android:layout_marginEnd="86dp"
                 android:layout_marginBottom="10dp"
                 android:tint="#FF7D8CA6"
                 app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toStartOf="@+id/delete2"
+                app:layout_constraintEnd_toStartOf="@+id/delete"
                 app:srcCompat="@drawable/ic_settings" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>

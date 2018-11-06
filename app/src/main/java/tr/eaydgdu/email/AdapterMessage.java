@@ -567,7 +567,7 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
                 boolean show_images = properties.showImages(message.id);
 
                 btnImages.setVisibility(has_images && show_expanded && !show_images ? View.VISIBLE : View.GONE);
-                tvBody.setText(body);
+                //tvBody.setText(body);
                 pbBody.setVisibility(View.GONE);
 
                 btnImages.setHasTransientState(false);
@@ -700,7 +700,6 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
                 }
             });
         }
-
         private class UrlHandler extends LinkMovementMethod {
             public boolean onTouchEvent(TextView widget, Spannable buffer, MotionEvent event) {
                 if (event.getAction() != MotionEvent.ACTION_UP)

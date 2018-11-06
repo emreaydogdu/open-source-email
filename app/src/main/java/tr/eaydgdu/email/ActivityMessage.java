@@ -20,6 +20,9 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
+
+import com.airbnb.lottie.LottieAnimationView;
 
 import org.xml.sax.XMLReader;
 
@@ -33,9 +36,10 @@ import tr.eaydgdu.email.database.DB;
 
 public class ActivityMessage extends AppCompatActivity implements View.OnClickListener {
 
-    ImageView back,delete;
+    ImageView back,delete,star;
     TupleMessageEx message;
     TextView messageTw, subject, from, email, time;
+    LottieAnimationView starAnim;
     private DateFormat df = SimpleDateFormat.getDateTimeInstance(SimpleDateFormat.LONG, SimpleDateFormat.LONG);
 
     @Override
@@ -47,7 +51,8 @@ public class ActivityMessage extends AppCompatActivity implements View.OnClickLi
         Bundle b = getIntent().getExtras();
         message = (TupleMessageEx) (b == null ? -1 : b.getSerializable("message"));
 
-
+        starAnim = findViewById(R.id.star_anim);
+        star = findViewById(R.id.star);
         back = findViewById(R.id.back);
         delete = findViewById(R.id.delete);
         subject = findViewById(R.id.subject);
@@ -65,6 +70,8 @@ public class ActivityMessage extends AppCompatActivity implements View.OnClickLi
 
         back.setOnClickListener(this);
         delete.setOnClickListener(this);
+        star.setOnClickListener(this);
+        starAnim.setOnClickListener(this);
 
 
         final WebView webview = findViewById(R.id.webview);
@@ -347,6 +354,23 @@ public class ActivityMessage extends AppCompatActivity implements View.OnClickLi
                         }}.load(this, args);
                     finish();
                 }
+                break;
+            case R.id.star:
+                starAnim.setVisibility(View.VISIBLE);
+                starAnim.playAnimation();
+                starAnim.addAnimatorUpdateListener((animation) -> {
+                    star.setAlpha(1f-animation.getAnimatedFraction());
+                    star.setVisibility(View.GONE);
+                });
+                break;
+            case R.id.star_anim:
+                starAnim.setSpeed(-1);
+                starAnim.playAnimation();
+                starAnim.addAnimatorUpdateListener((animation) -> {
+                    star.setVisibility(View.VISIBLE);
+                    star.setAlpha(1f);
+                });
+                starAnim.setVisibility(View.GONE);
                 break;
         }
     }

@@ -16,7 +16,7 @@
         android:required="false" />
 
     <application
-        android:name="tr.eaydgdu.email.ApplicationEx"
+        android:name=".ApplicationEx"
         android:allowBackup="false"
         android:appCategory="productivity"
         android:icon="@mipmap/ic_launcher"
@@ -38,68 +38,74 @@
             android:resource="@array/preloaded_fonts" />
 
         <activity
-            android:name="tr.eaydgdu.email.ActivityMain"
+            android:name=".ActivityMain"
             android:excludeFromRecents="true"
             android:launchMode="singleInstance"
             android:theme="@style/Theme.Transparent">
+
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
         </activity>
+
         <activity
-            android:name="tr.eaydgdu.email.ActivitySetup"
+            android:name=".ActivitySetup"
             android:exported="false"
             android:launchMode="singleInstance"
-            android:parentActivityName="tr.eaydgdu.email.ActivityMain" />
+            android:parentActivityName=".ActivityMain" />
+
         <activity
-            android:name="tr.eaydgdu.email.ActivityView"
+            android:name=".ActivityView"
             android:exported="true"
             android:launchMode="singleTop"
-            android:parentActivityName="tr.eaydgdu.email.ActivityMain">
+            android:parentActivityName=".ActivityMain">
+
             <intent-filter>
                 <action android:name="android.intent.action.PROCESS_TEXT" />
-
                 <category android:name="android.intent.category.DEFAULT" />
-
                 <data android:mimeType="text/plain" />
             </intent-filter>
         </activity>
+
         <activity
-            android:name="tr.eaydgdu.email.ActivityCompose"
+            android:name=".ActivityCompose"
             android:exported="true"
             android:launchMode="standard"
-            android:parentActivityName="tr.eaydgdu.email.ActivityView">
+            android:parentActivityName=".ActivityView">
+
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
                 <action android:name="android.intent.action.SEND_MULTIPLE" />
 
                 <data android:mimeType="*/*" />
-
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
+
             <intent-filter>
                 <action android:name="android.intent.action.SENDTO" />
-
                 <data android:scheme="mailto" />
-
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
+
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
-
                 <data android:scheme="mailto" />
 
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
             </intent-filter>
         </activity>
-        <activity android:name="tr.eaydgdu.email.activities.ActivityFolder" />
 
-        <service android:name="tr.eaydgdu.email.ServiceSynchronize" />
+        <service android:name=".ServiceSynchronize" />
+
         <service
-            android:name="tr.eaydgdu.email.JobDaily"
+            android:name=".JobDaily"
             android:exported="true"
             android:permission="android.permission.BIND_JOB_SERVICE" />
 
@@ -108,14 +114,16 @@
             android:authorities="${applicationId}"
             android:exported="false"
             android:grantUriPermissions="true">
+
             <meta-data
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/fileprovider_paths" />
         </provider>
 
         <receiver
-            android:name="tr.eaydgdu.email.Widget"
+            android:name=".Widget"
             android:label="@string/app_name">
+
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
@@ -124,10 +132,12 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/widget" />
         </receiver>
-        <receiver android:name="tr.eaydgdu.email.ReceiverAutostart">
+
+        <receiver android:name=".ReceiverAutostart">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
+
             <intent-filter>
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
             </intent-filter>

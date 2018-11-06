@@ -84,7 +84,7 @@ public class EntityMessage implements Serializable {
     public String deliveredto;
     public String inreplyto;
     public String thread; // compose = null
-    public String avatar; // URI
+    public String avatar; // Contact lookup URI
     public Address[] from;
     public Address[] to;
     public Address[] cc;

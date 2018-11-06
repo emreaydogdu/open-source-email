@@ -7,6 +7,8 @@
     <string name="channel_notification">Notifications</string>
     <string name="channel_error">Errors</string>
 
+    <string name="shortcut_compose">Compose</string>
+
     <plurals name="title_notification_synchronizing">
         <item quantity="one">Synchronizing %1$d account</item>
         <item quantity="other">Synchronizing %1$d accounts</item>
@@ -78,14 +80,19 @@
     <string name="title_setup_done">Done</string>
     <string name="title_setup_light_theme">Light theme</string>
     <string name="title_setup_dark_theme">Dark theme</string>
+    <string name="title_setup_black_background">Black background</string>
 
     <string name="title_advanced">Advanced options</string>
-    <string name="title_advanced_enabled">Enabled</string>
+    <string name="title_advanced_enabled">Synchronize</string>
+    <string name="title_advanced_compact">Compact message view</string>
     <string name="title_advanced_avatars">Show contact photos</string>
+    <string name="title_advanced_identicons">Show identicons</string>
+    <string name="title_advanced_preview">Show message preview</string>
     <string name="title_advanced_light">Use notification light</string>
     <string name="title_advanced_browse">Browse messages on the server</string>
     <string name="title_advanced_swipe">Swipe actions</string>
-    <string name="title_advanced_compact">Compact message view</string>
+    <string name="title_advanced_nav">Previous/next navigation</string>
+    <string name="title_advanced_download">Automatically download messages and attachments on a metered connection up to</string>
     <string name="title_advanced_debug">Debug mode</string>
 
     <string name="title_select">Select &#8230;</string>
@@ -195,6 +202,7 @@
 
     <string name="title_no_answers">No reply templates defined</string>
     <string name="title_no_viewer">No viewer app available for %1$s</string>
+    <string name="title_no_saf">Storage access framework not available</string>
     <string name="title_attachment_saved">Attachment saved</string>
     <string name="title_attachment_unavailable">Some attachments are not downloaded and will not be forwarded, continue?</string>
     <string name="title_ask_delete">Delete message permanently?</string>
@@ -217,6 +225,7 @@
     <string name="title_clipboard_empty">Clipboard empty</string>
     <string name="title_style_bold">Bold</string>
     <string name="title_style_italic">Italic</string>
+    <string name="title_style_clear">Clear formatting</string>
     <string name="title_style_link">Insert link</string>
     <string name="title_style_image">Insert image</string>
     <string name="title_add_attachment">Add attachment</string>
@@ -232,6 +241,7 @@
     <string name="title_encrypt">Encrypt</string>
     <string name="title_decrypt">Decrypt</string>
     <string name="title_no_openpgp">OpenKeychain not found</string>
+    <string name="title_not_encrypted">Message is not encrypted</string>
 
     <string name="title_search">Search</string>
     <string name="title_search_hint">Search on server</string>
@@ -250,6 +260,12 @@
     <string name="title_answer_reply">Reply template</string>
     <string name="title_answer_name">Template name</string>
     <string name="title_answer_text">Template text</string>
+    <string name="title_answer_template_name">$name$ will be replaced by the sender full name</string>
+    <string name="title_answer_template_email">$email$ will be replaced by the sender email address</string>
+
+    <string name="title_action_seen">Mark read</string>
+    <string name="title_action_archive">Archive</string>
+    <string name="title_action_trash">Trash</string>
 
     <string name="title_legend_inbox">Inbox</string>
     <string name="title_legend_unified">Unified inbox</string>
@@ -290,7 +306,7 @@
     <string name="title_pro_list">List of pro features</string>
     <string name="title_pro_purchase">Buy</string>
     <string name="title_pro_hint">Buying pro features will allow you to use all current and future pro features, will keep this app maintained, and supported</string>
-    <string name="title_pro_price">Please see <a href="https://github.com/M66B/open-source-email/blob/master/FAQ.md#FAQ19">this FAQ</a> about the price of the pro features</string>
+    <string name="title_pro_price">Please see <a href="https://github.com/M66B/open-source-email/blob/master/FAQ.md#user-content-FAQ19">this FAQ</a> about the price of the pro features</string>
     <string name="title_pro_activated">All pro features are activated</string>
     <string name="title_pro_valid">All pro features activated</string>
     <string name="title_pro_invalid">Invalid response</string>
@@ -301,6 +317,30 @@
     <string name="title_debug_info">Debug info</string>
     <string name="title_debug_info_remark">Please describe the problem and indicate the time of the problem:</string>
     <string name="title_crash_info_remark">Please describe what you were doing when the app crashed:</string>
+
+    <string-array name="downloadNames">
+        <item>16 KB</item>
+        <item>32 KB</item>
+        <item>64 KB</item>
+        <item>128 KB</item>
+        <item>256 KB</item>
+        <item>512 KB</item>
+        <item>1 MB</item>
+        <item>2 MB</item>
+        <item>&#8734;</item>
+    </string-array>
+
+    <integer-array name="downloadValues" translatable="false">
+        <item>16384</item>
+        <item>32768</item>
+        <item>65536</item>
+        <item>131072</item>
+        <item>262144</item>
+        <item>524288</item>
+        <item>1048576</item>
+        <item>2097152</item>
+        <item>0</item>
+    </integer-array>
 
     <array name="colorPicker">
         <item>@color/red</item>

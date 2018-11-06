@@ -1,24 +1,5 @@
 package tr.eaydgdu.email;
 
-/*
-    This file is part of FairEmail.
-
-    FairEmail is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    FairEmail is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with FairEmail.  If not, see <http://www.gnu.org/licenses/>.
-
-    Copyright 2018 by Marcel Bokhorst (M66B)
-*/
-
 import android.app.Application;
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -70,12 +51,14 @@ public class ApplicationEx extends Application {
                     NotificationManager.IMPORTANCE_MIN);
             service.setSound(null, Notification.AUDIO_ATTRIBUTES_DEFAULT);
             service.setShowBadge(false);
+            service.setLockscreenVisibility(Notification.VISIBILITY_SECRET);
             nm.createNotificationChannel(service);
 
             NotificationChannel notification = new NotificationChannel(
                     "notification",
                     getString(R.string.channel_notification),
-                    NotificationManager.IMPORTANCE_DEFAULT);
+                    NotificationManager.IMPORTANCE_HIGH);
+            notification.setLockscreenVisibility(Notification.VISIBILITY_PRIVATE);
             nm.createNotificationChannel(notification);
 
             NotificationChannel error = new NotificationChannel(
@@ -83,6 +66,7 @@ public class ApplicationEx extends Application {
                     getString(R.string.channel_error),
                     NotificationManager.IMPORTANCE_HIGH);
             error.setShowBadge(false);
+            error.setLockscreenVisibility(Notification.VISIBILITY_SECRET);
             nm.createNotificationChannel(error);
         }
     }
